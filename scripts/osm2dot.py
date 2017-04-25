@@ -1,9 +1,15 @@
+import argparse
 import re
-import sys
 
 import networkx as nx
 import osmgraph
 from networkx.drawing.nx_agraph import write_dot
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--input', default='manhattan.osm', help='Path to the input file in .osm format')
+parser.add_argument('--output', default='../src/main/resources/maps/manhattan.dot',
+                    help='Path to the output file which will be saved in .dot format')
+args = parser.parse_args()
 
 
 def nodes_tag_filter(tags):
@@ -45,8 +51,4 @@ def main(osmFile, dotFile):
       sources.write(re.sub(r';$', '', line))
 
 
-if __name__ == '__main__':
-  if len(sys.argv) > 2:
-    main(sys.argv[1], sys.argv[2])
-  else:
-    main('manhattan.osm', 'manhattan.dot')
+main(args.input, args.output)
