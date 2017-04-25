@@ -1,0 +1,3 @@
+networkx
+git+git://github.com/Mapkin/osmgraph.git
+pygraphviz
