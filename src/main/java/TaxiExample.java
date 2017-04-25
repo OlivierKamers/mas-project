@@ -34,7 +34,6 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Monitor;
 
 import javax.annotation.Nullable;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Map;
 
@@ -64,9 +63,8 @@ public final class TaxiExample {
     private static final int MAX_CAPACITY = 3;
     private static final double NEW_CUSTOMER_PROB = .007;
 
-    private static final String MAP_FILE = "src/main/resources/maps/map.dot";
-    private static final Map<String, Graph<MultiAttributeData>> GRAPH_CACHE =
-            newHashMap();
+    private static final String MAP_FILE = "src/main/resources/maps/manhattan.dot";
+    private static final Map<String, Graph<MultiAttributeData>> GRAPH_CACHE = newHashMap();
 
     private static final long TEST_STOP_TIME = 20 * 60 * 1000;
     private static final int TEST_SPEED_UP = 64;
@@ -84,8 +82,7 @@ public final class TaxiExample {
         final long endTime = args != null && args.length >= 1 ? Long
                 .parseLong(args[0]) : Long.MAX_VALUE;
 
-        final String graphFile = args != null && args.length >= 2 ? args[1]
-                : MAP_FILE;
+        final String graphFile = args != null && args.length >= 2 ? args[1] : MAP_FILE;
         run(false, endTime, graphFile, null /* new Display() */, null, null);
     }
 
@@ -215,8 +212,6 @@ public final class TaxiExample {
                     .read(name);
             GRAPH_CACHE.put(name, g);
             return g;
-        } catch (final FileNotFoundException e) {
-            throw new IllegalStateException(e);
         } catch (final IOException e) {
             throw new IllegalStateException(e);
         }
