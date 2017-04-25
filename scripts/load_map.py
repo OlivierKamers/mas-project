@@ -4,7 +4,8 @@ from networkx.drawing.nx_agraph import write_dot
 
 
 def nodes_tag_filter(tags):
-  pass
+  if not 'coordinate' in tags:
+    tags.clear()
 
 
 def ways_tag_filter(tags):
@@ -19,9 +20,11 @@ def ways_tag_filter(tags):
 
 def node_coords_to_pos(G):
   coords = nx.get_node_attributes(G, 'coordinate')
-  pos = dict(map(lambda (k, v): (k, "{},{}!".format(v[0], v[1])), coords.iteritems()))
-  nx.set_node_attributes(G, 'pos', pos)
+  pos = dict(map(lambda (k, v): (k, "{},{}".format(v[0], v[1])), coords.iteritems()))
+  # nx.set_node_attributes(G, 'pos', pos)
   nx.set_node_attributes(G, 'p', pos)
+  for node in G.nodes(data=True):
+    del node[1]['coordinate']
 
 
 def main():
@@ -31,6 +34,7 @@ def main():
   print 'Number of nodes: {}'.format(len(g.nodes()))
   node_coords_to_pos(g)
   write_dot(g, '{}.dot'.format(NAME))
+  # TODO: er mogen geen ';' op het einde van de lijnen staan (door check op ']' in DotGraphIO.java:121)
 
 
 if __name__ == '__main__':
