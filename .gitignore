@@ -4,3 +4,4 @@ target/
 *.csv
 .Rproj.user
 .RHistory
+.RData
