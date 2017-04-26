@@ -1,3 +1,6 @@
 .idea
 *.pyc
 target/
+*.csv
+.Rproj.user
+.RHistory

@@ -15,7 +15,10 @@
  */
 
 import com.github.rinde.rinsim.core.Simulator;
-import com.github.rinde.rinsim.core.model.pdp.*;
+import com.github.rinde.rinsim.core.model.pdp.DefaultPDPModel;
+import com.github.rinde.rinsim.core.model.pdp.PDPModel;
+import com.github.rinde.rinsim.core.model.pdp.Parcel;
+import com.github.rinde.rinsim.core.model.pdp.ParcelDTO;
 import com.github.rinde.rinsim.core.model.road.RoadModel;
 import com.github.rinde.rinsim.core.model.road.RoadModelBuilders;
 import com.github.rinde.rinsim.core.model.time.TickListener;
@@ -23,7 +26,6 @@ import com.github.rinde.rinsim.core.model.time.TimeLapse;
 import com.github.rinde.rinsim.event.Listener;
 import com.github.rinde.rinsim.geom.Graph;
 import com.github.rinde.rinsim.geom.MultiAttributeData;
-import com.github.rinde.rinsim.geom.Point;
 import com.github.rinde.rinsim.geom.io.DotGraphIO;
 import com.github.rinde.rinsim.geom.io.Filters;
 import com.github.rinde.rinsim.ui.View;
@@ -41,7 +43,7 @@ import static com.google.common.collect.Maps.newHashMap;
 
 /**
  * Example showing a fleet of taxis that have to pickup and transport customers
- * around the city of Leuven.
+ * around the city of Manhattan.
  * <p>
  * If this class is run on MacOS it might be necessary to use
  * -XstartOnFirstThread as a VM argument.
@@ -80,8 +82,7 @@ public final class TaxiExample {
         final long endTime = args != null && args.length >= 1 ? Long
                 .parseLong(args[0]) : Long.MAX_VALUE;
 
-        final String graphFile = args != null && args.length >= 2 ? args[1] : MAP_FILE;
-        run(false, endTime, graphFile, null /* new Display() */, null, null);
+        run(false, endTime, MAP_FILE, null /* new Display() */, null, null);
     }
 
     /**
