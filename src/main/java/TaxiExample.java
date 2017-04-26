@@ -50,14 +50,12 @@ import static com.google.common.collect.Maps.newHashMap;
  */
 public final class TaxiExample {
 
-    private static final int NUM_DEPOTS = 1;
     private static final int NUM_TAXIS = 20;
     private static final int NUM_CUSTOMERS = 30;
 
     // time in ms
     private static final long SERVICE_DURATION = 60000;
     private static final int TAXI_CAPACITY = 10;
-    private static final int DEPOT_CAPACITY = 100;
 
     private static final int SPEED_UP = 4;
     private static final int MAX_CAPACITY = 3;
@@ -112,7 +110,7 @@ public final class TaxiExample {
 
         final View.Builder view = createGui(testing, display, m, list);
 
-        // use map of leuven
+        // use map of Manhattan
         final Simulator simulator = Simulator.builder()
                 .addModel(RoadModelBuilders.staticGraph(loadGraph(graphFile)))
                 .addModel(DefaultPDPModel.builder())
@@ -122,11 +120,6 @@ public final class TaxiExample {
 
         final RoadModel roadModel = simulator.getModelProvider().getModel(
                 RoadModel.class);
-        // add depots, taxis and parcels to simulator
-        for (int i = 0; i < NUM_DEPOTS; i++) {
-            simulator.register(new TaxiBase(roadModel.getRandomPosition(rng),
-                    DEPOT_CAPACITY));
-        }
         for (int i = 0; i < NUM_TAXIS; i++) {
             simulator.register(new Taxi(roadModel.getRandomPosition(rng),
                     TAXI_CAPACITY));
@@ -174,8 +167,6 @@ public final class TaxiExample {
         View.Builder view = View.builder()
                 .with(GraphRoadModelRenderer.builder())
                 .with(RoadUserRenderer.builder()
-                        .withImageAssociation(
-                                TaxiBase.class, "/graphics/perspective/tall-building-64.png")
                         .withImageAssociation(
                                 Taxi.class, "/graphics/flat/taxi-32.png")
                         .withImageAssociation(
@@ -229,17 +220,4 @@ public final class TaxiExample {
         public void initRoadPDP(RoadModel pRoadModel, PDPModel pPdpModel) {
         }
     }
-
-    // currently has no function
-    static class TaxiBase extends Depot {
-        TaxiBase(Point position, double capacity) {
-            super(position);
-            setCapacity(capacity);
-        }
-
-        @Override
-        public void initRoadPDP(RoadModel pRoadModel, PDPModel pPdpModel) {
-        }
-    }
-
 }
