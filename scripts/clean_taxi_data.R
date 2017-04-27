@@ -8,7 +8,7 @@ load_data <- function(filename) {
   d <- fread(filename,
              header = TRUE,
              sep = ',',
-             select = c('tpep_pickup_datetime','tpep_dropoff_datetime','passenger_count','pickup_longitude','pickup_latitude','dropoff_longitude','dropoff_latitude')
+             select = c('tpep_pickup_datetime','passenger_count','pickup_longitude','pickup_latitude','dropoff_longitude','dropoff_latitude')
              )
   print('Filtering coordinates')
   d_filtered <- d[d$pickup_longitude %between% c(MIN_LONG,MAX_LONG) & d$dropoff_longitude %between% c(MIN_LONG,MAX_LONG) & d$pickup_latitude %between% c(MIN_LATI, MAX_LATI) & d$dropoff_latitude %between% c(MIN_LATI, MAX_LATI) , ]

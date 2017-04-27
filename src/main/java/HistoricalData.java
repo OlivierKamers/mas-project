@@ -7,16 +7,14 @@ import java.util.Locale;
 public class HistoricalData {
     private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private LocalDateTime pickupTime;
-    private LocalDateTime dropoffTime;
     private Number passengerCount;
     private Number pickupLongitude;
     private Number pickupLatitude;
     private Number dropoffLongitude;
     private Number dropoffLatitude;
 
-    public HistoricalData(LocalDateTime pickupTime, LocalDateTime dropoffTime, Number passengerCount, Number pickupLongitude, Number pickupLatitude, Number dropoffLongitude, Number dropoffLatitude) {
+    public HistoricalData(LocalDateTime pickupTime, Number passengerCount, Number pickupLongitude, Number pickupLatitude, Number dropoffLongitude, Number dropoffLatitude) {
         this.pickupTime = pickupTime;
-        this.dropoffTime = dropoffTime;
         this.passengerCount = passengerCount;
         this.pickupLongitude = pickupLongitude;
         this.pickupLatitude = pickupLatitude;
@@ -24,10 +22,9 @@ public class HistoricalData {
         this.dropoffLatitude = dropoffLatitude;
     }
 
-    public static HistoricalData parse(String pickupTime, String dropoffTime, String passengerCount, String pickupLongitude, String pickupLatitude, String dropoffLongitude, String dropoffLatitude) throws ParseException {
+    public static HistoricalData parse(String pickupTime, String passengerCount, String pickupLongitude, String pickupLatitude, String dropoffLongitude, String dropoffLatitude) throws ParseException {
         return new HistoricalData(
                 LocalDateTime.parse(pickupTime.replaceAll("\"", ""), dateTimeFormatter),
-                LocalDateTime.parse(dropoffTime.replaceAll("\"", ""), dateTimeFormatter),
                 NumberFormat.getNumberInstance(Locale.US).parse(passengerCount),
                 NumberFormat.getNumberInstance(Locale.US).parse(pickupLongitude),
                 NumberFormat.getNumberInstance(Locale.US).parse(pickupLatitude),
@@ -37,15 +34,11 @@ public class HistoricalData {
     }
 
     public static HistoricalData parse(String[] fields) throws ParseException {
-        return parse(fields[0], fields[1], fields[2], fields[3], fields[4], fields[5], fields[6]);
+        return parse(fields[0], fields[1], fields[2], fields[3], fields[4], fields[5]);
     }
 
     public LocalDateTime getPickupTime() {
         return pickupTime;
-    }
-
-    public LocalDateTime getDropoffTime() {
-        return dropoffTime;
     }
 
     public Number getPickupLongitude() {
