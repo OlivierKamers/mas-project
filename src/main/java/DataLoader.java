@@ -18,21 +18,34 @@ public class DataLoader {
 
     DataLoader(String path, LocalDateTime startTime) throws IOException {
         bufferedReader = new BufferedReader(new FileReader(path));
-        bufferedReader.readLine();
+        bufferedReader.readLine(); // to skip header line
         currentDateTime = startTime;
     }
 
     public static void main(String[] args) {
         try {
             DataLoader loader = new DataLoader("src/main/resources/data/yellow_tripdata_2015-01_cleaned.csv", LocalDateTime.of(2015, 1, 1, 0, 0, 0));
-            List<HistoricalData> data = loader.read(Duration.ofMinutes(5));
+//            List<HistoricalData> data = loader.read(Duration.ofMinutes(5));
+            List<HistoricalData> data = loader.readAll();
             System.out.println(data.size());
-            for (HistoricalData historicalData : data) {
-                System.out.println(historicalData.toString());
-            }
+//            for (HistoricalData historicalData : data) {
+//                System.out.println(historicalData.toString());
+//            }
         } catch (IOException | ParseException e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Read all data from this data file.
+     */
+    List<HistoricalData> readAll() throws IOException, ParseException {
+        ArrayList<HistoricalData> result = new ArrayList<>(11000000);
+        String line;
+        while ((line = bufferedReader.readLine()) != null) {
+            result.add(HistoricalData.parse(line.split(DELIMITER)));
+        }
+        return result;
     }
 
     /**

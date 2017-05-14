@@ -18,5 +18,6 @@ load_data <- function(filename) {
   print('Sorting by pickup datetime')
   d_filtered <- d_filtered[order(as.POSIXct(d_filtered$tpep_pickup_datetime, format="%Y-%m-%d %H:%M:%S")),]
   print('Writing csv')
-  write.csv(d_filtered, gsub(".csv", "_cleaned.csv", filename), row.names=FALSE)
+  print(file.path("..", "src", "main", "resources", gsub(".csv", "_cleaned.csv", filename)))
+  write.csv(d_filtered, file.path("..", "src", "main", "resources", gsub(".csv", "_cleaned.csv", filename)), row.names=FALSE)
 }
