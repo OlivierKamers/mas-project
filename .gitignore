@@ -5,3 +5,4 @@ target/
 .Rproj.user
 .RHistory
 .RData
+.env
