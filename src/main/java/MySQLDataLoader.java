@@ -5,7 +5,7 @@ import java.util.List;
 
 
 /**
- * DataLoader class responsible for loading the csv file containing the historical data.
+ * MySQLDataLoader class responsible for loading the historical data from a MySQL data source.
  */
 public class MySQLDataLoader {
     static String CONNECTION_STRING = "jdbc:mysql://%s:%s/%s?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC";
@@ -18,12 +18,12 @@ public class MySQLDataLoader {
     public static void main(String[] args) {
         try {
             MySQLDataLoader loader = new MySQLDataLoader();
-//            List<HistoricalData> data = loader.readAll();
-            List<HistoricalData> data = loader.read(LocalDateTime.of(2015, 1, 2, 0, 0, 0), LocalDateTime.of(2015, 1, 3, 0, 0, 0));
+            List<HistoricalData> data = loader.readAll();
+//            List<HistoricalData> data = loader.read(LocalDateTime.of(2015, 1, 2, 0, 0, 0), LocalDateTime.of(2015, 1, 3, 0, 0, 0));
             System.out.println(data.size());
-//            for (HistoricalData d : data) {
-//                System.out.println(d);
-//            }
+            for (HistoricalData d : data) {
+                System.out.println(d);
+            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -35,7 +35,7 @@ public class MySQLDataLoader {
      */
     List<HistoricalData> readAll() throws SQLException {
         Statement statement = connection.createStatement();
-        String query = "SELECT * FROM pickups;";
+        String query = "SELECT * FROM pickups LIMIT 100;";
         ResultSet rst = statement.executeQuery(query);
         ArrayList<HistoricalData> result = new ArrayList<>();
         while (rst.next()) {

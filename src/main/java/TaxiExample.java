@@ -26,10 +26,11 @@ import com.github.rinde.rinsim.core.model.time.TimeLapse;
 import com.github.rinde.rinsim.event.Listener;
 import com.github.rinde.rinsim.geom.Graph;
 import com.github.rinde.rinsim.geom.MultiAttributeData;
+import com.github.rinde.rinsim.geom.Point;
 import com.github.rinde.rinsim.geom.io.DotGraphIO;
 import com.github.rinde.rinsim.geom.io.Filters;
 import com.github.rinde.rinsim.ui.View;
-import com.github.rinde.rinsim.ui.renderers.GraphRoadModelRenderer;
+import com.github.rinde.rinsim.ui.renderers.PlaneRoadModelRenderer;
 import com.github.rinde.rinsim.ui.renderers.RoadUserRenderer;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.eclipse.swt.widgets.Display;
@@ -37,6 +38,8 @@ import org.eclipse.swt.widgets.Monitor;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 
 import static com.google.common.collect.Maps.newHashMap;
@@ -54,20 +57,18 @@ public final class TaxiExample {
 
     private static final int NUM_TAXIS = 20;
     private static final int NUM_CUSTOMERS = 30;
-
     // time in ms
     private static final long SERVICE_DURATION = 60000;
     private static final int TAXI_CAPACITY = 10;
-
     private static final int SPEED_UP = 4;
     private static final int MAX_CAPACITY = 3;
     private static final double NEW_CUSTOMER_PROB = .007;
-
     private static final String MAP_FILE = "src/main/resources/maps/manhattan.dot";
     private static final Map<String, Graph<MultiAttributeData>> GRAPH_CACHE = newHashMap();
-
     private static final long TEST_STOP_TIME = 20 * 60 * 1000;
     private static final int TEST_SPEED_UP = 64;
+    private static Point ROADMODEL_MIN_POINT = new Point(-74.0193099976, -40.8774528503);
+    private static Point ROADMODEL_MAX_POINT = new Point(-73.9104537964, -40.7011375427);
 
     private TaxiExample() {
     }
@@ -113,7 +114,8 @@ public final class TaxiExample {
 
         // use map of Manhattan
         final Simulator simulator = Simulator.builder()
-                .addModel(RoadModelBuilders.staticGraph(loadGraph(graphFile)))
+                .addModel(RoadModelBuilders.plane().withMinPoint(ROADMODEL_MIN_POINT).withMaxPoint(ROADMODEL_MAX_POINT))
+//                .addModel(RoadModelBuilders.staticGraph(loadGraph(graphFile)))
                 .addModel(DefaultPDPModel.builder())
                 .addModel(view)
                 .build();
@@ -125,14 +127,24 @@ public final class TaxiExample {
             simulator.register(new Taxi(roadModel.getRandomPosition(rng),
                     TAXI_CAPACITY));
         }
-        for (int i = 0; i < NUM_CUSTOMERS; i++) {
-            simulator.register(new Customer(
-                    Parcel.builder(roadModel.getRandomPosition(rng),
-                            roadModel.getRandomPosition(rng))
-                            .serviceDuration(SERVICE_DURATION)
-                            .neededCapacity(1 + rng.nextInt(MAX_CAPACITY))
-                            .buildDTO()));
+        try {
+            MySQLDataLoader dataLoader = new MySQLDataLoader();
+            List<HistoricalData> data = dataLoader.readAll();
+            for (HistoricalData h : data) {
+                simulator.register(new Customer(h));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
+
+//        for (int i = 0; i < NUM_CUSTOMERS; i++) {
+//            simulator.register(new Customer(
+//                    Parcel.builder(roadModel.getRandomPosition(rng),
+//                            roadModel.getRandomPosition(rng))
+//                            .serviceDuration(SERVICE_DURATION)
+//                            .neededCapacity(1 + rng.nextInt(MAX_CAPACITY))
+//                            .buildDTO()));
+//        }
 
         simulator.addTickListener(new TickListener() {
             @Override
@@ -166,7 +178,8 @@ public final class TaxiExample {
             @Nullable Listener list) {
 
         View.Builder view = View.builder()
-                .with(GraphRoadModelRenderer.builder())
+                .with(PlaneRoadModelRenderer.builder())
+//                .with(GraphRoadModelRenderer.builder())
                 .with(RoadUserRenderer.builder()
                         .withImageAssociation(
                                 Taxi.class, "/graphics/flat/taxi-32.png")
@@ -215,6 +228,10 @@ public final class TaxiExample {
     static class Customer extends Parcel {
         Customer(ParcelDTO dto) {
             super(dto);
+        }
+
+        Customer(HistoricalData data) {
+            super(Parcel.builder(data.getPickupPoint(), data.getDropoffPoint()).buildDTO());
         }
 
         @Override

@@ -1,35 +1,39 @@
-import java.text.NumberFormat;
+import com.github.rinde.rinsim.geom.Point;
+
 import java.text.ParseException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 
 public class HistoricalData {
     private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private LocalDateTime pickupTime;
-    private Number passengerCount;
-    private Number pickupLongitude;
-    private Number pickupLatitude;
-    private Number dropoffLongitude;
-    private Number dropoffLatitude;
+    private int passengerCount;
+    private double pickupLongitude;
+    private double pickupLatitude;
+    private Point pickupPoint;
+    private double dropoffLongitude;
+    private double dropoffLatitude;
+    private Point dropoffPoint;
 
-    public HistoricalData(LocalDateTime pickupTime, Number passengerCount, Number pickupLongitude, Number pickupLatitude, Number dropoffLongitude, Number dropoffLatitude) {
+    public HistoricalData(LocalDateTime pickupTime, int passengerCount, double pickupLongitude, double pickupLatitude, double dropoffLongitude, double dropoffLatitude) {
         this.pickupTime = pickupTime;
         this.passengerCount = passengerCount;
         this.pickupLongitude = pickupLongitude;
-        this.pickupLatitude = pickupLatitude;
+        this.pickupLatitude = -pickupLatitude;
+        this.pickupPoint = new Point(pickupLongitude, -pickupLatitude);
         this.dropoffLongitude = dropoffLongitude;
-        this.dropoffLatitude = dropoffLatitude;
+        this.dropoffLatitude = -dropoffLatitude;
+        this.dropoffPoint = new Point(dropoffLongitude, -dropoffLatitude);
     }
 
     public static HistoricalData parse(String pickupTime, String passengerCount, String pickupLongitude, String pickupLatitude, String dropoffLongitude, String dropoffLatitude) throws ParseException {
         return new HistoricalData(
                 LocalDateTime.parse(pickupTime.replaceAll("\"", ""), dateTimeFormatter),
-                NumberFormat.getNumberInstance(Locale.US).parse(passengerCount),
-                NumberFormat.getNumberInstance(Locale.US).parse(pickupLongitude),
-                NumberFormat.getNumberInstance(Locale.US).parse(pickupLatitude),
-                NumberFormat.getNumberInstance(Locale.US).parse(dropoffLongitude),
-                NumberFormat.getNumberInstance(Locale.US).parse(dropoffLatitude)
+                Integer.parseInt(passengerCount),
+                Double.parseDouble(pickupLongitude),
+                Double.parseDouble(pickupLatitude),
+                Double.parseDouble(dropoffLongitude),
+                Double.parseDouble(dropoffLatitude)
         );
     }
 
@@ -41,24 +45,32 @@ public class HistoricalData {
         return pickupTime;
     }
 
-    public Number getPickupLongitude() {
+    public double getPickupLongitude() {
         return pickupLongitude;
     }
 
-    public Number getPickupLatitude() {
+    public double getPickupLatitude() {
         return pickupLatitude;
     }
 
-    public Number getDropoffLongitude() {
+    public double getDropoffLongitude() {
         return dropoffLongitude;
     }
 
-    public Number getDropoffLatitude() {
+    public double getDropoffLatitude() {
         return dropoffLatitude;
     }
 
-    public Number getPassengerCount() {
+    public int getPassengerCount() {
         return passengerCount;
+    }
+
+    public Point getPickupPoint() {
+        return pickupPoint;
+    }
+
+    public Point getDropoffPoint() {
+        return dropoffPoint;
     }
 
     @Override
@@ -67,16 +79,11 @@ public class HistoricalData {
         sb.append('[')
                 .append(getPickupTime().toString())
                 .append("] ")
-                .append(getPassengerCount().toString())
-                .append(" passenger(s) (")
-                .append(getPickupLongitude().toString())
-                .append(", ")
-                .append(getPickupLatitude().toString())
-                .append(") --> (")
-                .append(getDropoffLongitude().toString())
-                .append(", ")
-                .append(getDropoffLatitude().toString())
-                .append(')')
+                .append(getPassengerCount())
+                .append(" passenger(s) ")
+                .append(getPickupPoint())
+                .append(" --> ")
+                .append(getDropoffPoint())
         ;
         return sb.toString();
     }
