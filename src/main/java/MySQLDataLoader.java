@@ -79,12 +79,12 @@ public class MySQLDataLoader {
             PreparedStatement statement = connection.prepareStatement("SELECT * FROM pickups WHERE tpep_pickup_datetime >= ? AND tpep_pickup_datetime < ?;");
             statement.setObject(1, start);
             statement.setObject(2, end);
-            System.out.println(statement.toString());
             ResultSet rst = statement.executeQuery();
             ArrayList<HistoricalData> result = new ArrayList<>();
             while (rst.next()) {
                 result.add(parse(rst));
             }
+            System.out.println(statement.toString() + " ==> " + result.size() + " pickups.");
             return result;
         } catch (SQLException e) {
             e.printStackTrace();

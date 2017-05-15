@@ -10,7 +10,6 @@ import org.jetbrains.annotations.NotNull;
 
 class DiscreteFieldRenderer extends AbstractCanvasRenderer {
 
-    static final double DIAMETER_MUL = 6d;
     static final RGB COLOR_LOW = new RGB(0, 255, 255);
     static final RGB COLOR_HIGH = new RGB(255, 0, 0);
 
@@ -30,16 +29,16 @@ class DiscreteFieldRenderer extends AbstractCanvasRenderer {
 
     @Override
     public void renderDynamic(GC gc, ViewPort vp, long time) {
-        int frameIndex = this.discreteField.getFrameIndexForTime(time);
-        for (int x = 0; x < this.discreteField.getXDimension(); x++) {
-            for (int y = 0; y < this.discreteField.getYDimension(); y++) {
-                double fieldVal = this.discreteField.getValue(frameIndex, x, y);
-                gc.setBackground(new Color(gc.getDevice(), getRgb(fieldVal)));
+        int frameIndex = discreteField.getFrameIndexForTime(time);
+        for (int x = 0; x < discreteField.getXDimension(); x++) {
+            for (int y = 0; y < discreteField.getYDimension(); y++) {
+                gc.setBackground(new Color(gc.getDevice(), getRgb(this.discreteField.getValue(frameIndex, x, y))));
                 gc.fillRectangle(
                         vp.toCoordX(1.0 * x / this.discreteField.getXDimension() * Helper.ROADMODEL_BOUNDARIES_SCALE * Helper.getXScale()),
                         vp.toCoordY(1.0 * y / this.discreteField.getYDimension() * Helper.ROADMODEL_BOUNDARIES_SCALE * Helper.getYScale()),
                         vp.scale(1.0 * Helper.ROADMODEL_BOUNDARIES_SCALE / this.discreteField.getXDimension()),
-                        vp.scale(1.0 * Helper.ROADMODEL_BOUNDARIES_SCALE) / this.discreteField.getYDimension());
+                        vp.scale(1.0 * Helper.ROADMODEL_BOUNDARIES_SCALE) / this.discreteField.getYDimension()
+                );
             }
         }
     }
@@ -56,7 +55,6 @@ class DiscreteFieldRenderer extends AbstractCanvasRenderer {
     abstract static class Builder extends AbstractModelBuilder<DiscreteFieldRenderer, Void> {
 
         Builder() {
-
         }
 
         static Builder create(DiscreteField df) {
@@ -67,7 +65,6 @@ class DiscreteFieldRenderer extends AbstractCanvasRenderer {
 
         @Override
         public DiscreteFieldRenderer build(DependencyProvider dependencyProvider) {
-//            final DiscreteField df = dependencyProvider.get(DiscreteField.class);
             return new DiscreteFieldRenderer(df());
         }
 

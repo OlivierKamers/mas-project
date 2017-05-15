@@ -23,9 +23,20 @@ public class DiscreteField {
         this.durationPerFrame = Duration.ofMillis(0);
     }
 
-//    static Builder builder() {
-//        return new AutoValue_DiscreteField_Builder();
-//    }
+    public static void printField(double[][] field) {
+        int yDim = field[0].length;
+        for (int y = 0; y < yDim; y++) {
+            StringBuilder sb = new StringBuilder();
+            for (double[] row : field) {
+                sb.append(row[y]).append(' ');
+            }
+            System.out.println(sb.toString());
+        }
+    }
+
+    public void printField(int t) {
+        printField(fieldData[t]);
+    }
 
     public int getTDimension() {
         return this.tDim;
@@ -43,20 +54,7 @@ public class DiscreteField {
         return Math.min(this.getTDimension() - 1, (int) Math.floor(time / durationPerFrame.toMillis()));
     }
 
-    public double getValue(int tDim, int xDim, int yDim) {
-        return this.fieldData[tDim][xDim][yDim];
+    public double getValue(int t, int x, int y) {
+        return this.fieldData[t][x][y];
     }
-
-//    @AutoValue
-//    abstract static class Builder implements Serializable {
-//
-//        private static final long serialVersionUID = 4464819196521333418L;
-//
-//        Builder() {
-//        }
-//
-//        public DiscreteField build(DependencyProvider dependencyProvider) {
-//
-//        }
-//    }
 }

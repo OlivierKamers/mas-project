@@ -24,8 +24,6 @@ import com.github.rinde.rinsim.core.model.road.RoadModelBuilders;
 import com.github.rinde.rinsim.core.model.time.TickListener;
 import com.github.rinde.rinsim.core.model.time.TimeLapse;
 import com.github.rinde.rinsim.event.Listener;
-import com.github.rinde.rinsim.geom.Graph;
-import com.github.rinde.rinsim.geom.MultiAttributeData;
 import com.github.rinde.rinsim.ui.View;
 import com.github.rinde.rinsim.ui.renderers.PlaneRoadModelRenderer;
 import com.github.rinde.rinsim.ui.renderers.RoadUserRenderer;
@@ -35,9 +33,6 @@ import org.eclipse.swt.widgets.Monitor;
 
 import javax.annotation.Nullable;
 import java.util.List;
-import java.util.Map;
-
-import static com.google.common.collect.Maps.newHashMap;
 
 /**
  * MAS Project 2017
@@ -46,15 +41,11 @@ import static com.google.common.collect.Maps.newHashMap;
  */
 public final class MasProject {
     private static final double MAX_SPEED = 50;
-    private static final int NUM_TAXIS = 20;
-    private static final int NUM_CUSTOMERS = 200;
+    private static final int NUM_TAXIS = 1000;
     // time in ms
-    private static final long SERVICE_DURATION = 60000;
+    private static final long SERVICE_DURATION = 10000;
     private static final int TAXI_CAPACITY = 10;
     private static final int SPEED_UP = 1;
-    private static final int MAX_CAPACITY = 3;
-    private static final double NEW_CUSTOMER_PROB = .007;
-    private static final Map<String, Graph<MultiAttributeData>> GRAPH_CACHE = newHashMap();
     private static final long TEST_STOP_TIME = 20 * 60 * 1000;
     private static final int TEST_SPEED_UP = 1;
 
@@ -94,7 +85,10 @@ public final class MasProject {
      */
     public static Simulator run(boolean testing, final long endTime, @Nullable Display display, @Nullable Monitor m, @Nullable Listener list) {
 
-        final View.Builder view = createGui(testing, display, m, list);
+        FieldGenerator fieldGenerator = new FieldGenerator();
+        DiscreteField discreteField = fieldGenerator.load();
+
+        final View.Builder view = createGui(testing, display, m, list, discreteField);
 
         final Simulator simulator = Simulator.builder()
                 .addModel(RoadModelBuilders.plane()
@@ -118,15 +112,17 @@ public final class MasProject {
         simulator.addTickListener(new TickListener() {
             @Override
             public void tick(TimeLapse time) {
-//                System.out.println("Current DateTime: " + Helper.START_TIME.plusNanos(time.getStartTime()* 1000000).toString());
+                System.out.println("Customers " + roadModel.getObjectsOfType(Customer.class).size());
+//                System.out.println("Current DateTime: " + Helper.START_TIME.plusNanos(time.getStartTime() * 1000000).toString());
 
                 if (time.getStartTime() > endTime) {
                     simulator.stop();
                 }
 
-                for (Customer c : roadModel.getObjectsOfType(Customer.class)) {
-                    simulator.unregister(c);
-                }
+                // For debugging: clear the previous customers when loading new ones
+//                for (Customer c : roadModel.getObjectsOfType(Customer.class)) {
+//                    simulator.unregister(c);
+//                }
 
                 List<HistoricalData> data = dataLoader.read(
                         Helper.START_TIME.plusNanos(time.getStartTime() * 1000000),
@@ -135,7 +131,13 @@ public final class MasProject {
 
                 for (HistoricalData h : data) {
                     simulator.register(new Customer(h));
+                    // For debugging: print the data
+//                    System.out.println(h.toString());
                 }
+
+                // For debugging: only use with small field matrix
+//                discreteField.printField(discreteField.getFrameIndexForTime(time.getTime()));
+
             }
 
             @Override
@@ -151,20 +153,19 @@ public final class MasProject {
             boolean testing,
             @Nullable Display display,
             @Nullable Monitor m,
-            @Nullable Listener list) {
-
-        FieldGenerator f = new FieldGenerator();
-        DiscreteField df = f.load();
+            @Nullable Listener list,
+            DiscreteField df) {
 
         View.Builder view = View.builder()
                 .with(PlaneRoadModelRenderer.builder())
                 .with(DiscreteFieldRenderer.builder().withField(df))
                 .with(RoadUserRenderer.builder()
-                        .withImageAssociation(
-                                Taxi.class, "/graphics/flat/taxi-32.png")
-                        .withImageAssociation(
-                                Customer.class, "/graphics/flat/person-red-32.png")
-                        .withToStringLabel())
+                                .withImageAssociation(
+                                        Taxi.class, "/graphics/flat/taxi-32.png")
+                                .withImageAssociation(
+                                        Customer.class, "/graphics/flat/person-red-32.png")
+//                        .withToStringLabel()
+                )
                 .with(TaxiRenderer.builder(TaxiRenderer.Language.ENGLISH))
                 .withTitleAppendix("MAS Project 2017 - Evert Etienne & Olivier Kamers");
 
@@ -210,9 +211,9 @@ public final class MasProject {
 
         @Override
         public String toString() {
-            return "Customer{" +
-                    this.getPickupLocation().toString() +
-                    "}";
+            return new StringBuilder().append("Customer{")
+                    .append(this.getPickupLocation().toString())
+                    .append("}").toString();
         }
     }
 }
