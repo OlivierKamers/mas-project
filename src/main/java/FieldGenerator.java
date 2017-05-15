@@ -1,6 +1,5 @@
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
 
 public class FieldGenerator {
@@ -50,7 +49,7 @@ public class FieldGenerator {
                 fieldFrame[x][y] /= max;
             }
         }
-        System.out.println(Arrays.deepToString(fieldFrame));
+//        System.out.println(Arrays.deepToString(fieldFrame));
         return fieldFrame;
     }
 }

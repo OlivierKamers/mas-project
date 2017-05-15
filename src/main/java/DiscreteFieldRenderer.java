@@ -6,12 +6,13 @@ import com.google.auto.value.AutoValue;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.RGB;
+import org.jetbrains.annotations.NotNull;
 
 class DiscreteFieldRenderer extends AbstractCanvasRenderer {
 
     static final double DIAMETER_MUL = 6d;
-    static final RGB GREEN = new RGB(0, 255, 0);
-    static final RGB RED = new RGB(255, 0, 0);
+    static final RGB COLOR_LOW = new RGB(0, 255, 255);
+    static final RGB COLOR_HIGH = new RGB(255, 0, 0);
 
     DiscreteField discreteField;
 
@@ -30,19 +31,25 @@ class DiscreteFieldRenderer extends AbstractCanvasRenderer {
     @Override
     public void renderDynamic(GC gc, ViewPort vp, long time) {
         int frameIndex = this.discreteField.getFrameIndexForTime(time);
-        System.out.println(time);
-        System.out.println(frameIndex);
         for (int x = 0; x < this.discreteField.getXDimension(); x++) {
             for (int y = 0; y < this.discreteField.getYDimension(); y++) {
                 double fieldVal = this.discreteField.getValue(frameIndex, x, y);
-                RGB rgb = new RGB((int) (255 * fieldVal), (int) (255 * (1 - fieldVal)), 0);
-                gc.setBackground(new Color(gc.getDevice(), rgb));
-                gc.fillRectangle(vp.toCoordX((double) (x) / this.discreteField.getXDimension() * Helper.ROADMODEL_BOUNDARIES_SCALE * Helper.getXScale()),
-                        vp.toCoordY((double) (y) / this.discreteField.getYDimension() * Helper.ROADMODEL_BOUNDARIES_SCALE * Helper.getYScale()),
-                        vp.scale((double)(Helper.ROADMODEL_BOUNDARIES_SCALE)/this.discreteField.getXDimension()),
-                        vp.scale((double)(Helper.ROADMODEL_BOUNDARIES_SCALE)/this.discreteField.getYDimension()));
+                gc.setBackground(new Color(gc.getDevice(), getRgb(fieldVal)));
+                gc.fillRectangle(
+                        vp.toCoordX(1.0 * x / this.discreteField.getXDimension() * Helper.ROADMODEL_BOUNDARIES_SCALE * Helper.getXScale()),
+                        vp.toCoordY(1.0 * y / this.discreteField.getYDimension() * Helper.ROADMODEL_BOUNDARIES_SCALE * Helper.getYScale()),
+                        vp.scale(1.0 * Helper.ROADMODEL_BOUNDARIES_SCALE / this.discreteField.getXDimension()),
+                        vp.scale(1.0 * Helper.ROADMODEL_BOUNDARIES_SCALE) / this.discreteField.getYDimension());
             }
         }
+    }
+
+    @NotNull
+    private RGB getRgb(double fieldVal) {
+        int red = (int) (COLOR_HIGH.red * fieldVal + COLOR_LOW.red * (1 - fieldVal));
+        int green = (int) (COLOR_HIGH.green * fieldVal + COLOR_LOW.green * (1 - fieldVal));
+        int blue = (int) (COLOR_HIGH.blue * fieldVal + COLOR_LOW.blue * (1 - fieldVal));
+        return new RGB(red, green, blue);
     }
 
     @AutoValue
