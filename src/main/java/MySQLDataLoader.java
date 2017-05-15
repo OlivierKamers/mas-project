@@ -76,7 +76,7 @@ public class MySQLDataLoader {
      */
     List<HistoricalData> read(LocalDateTime start, LocalDateTime end) {
         try {
-            PreparedStatement statement = connection.prepareStatement("SELECT * FROM pickups WHERE tpep_pickup_datetime BETWEEN ? AND ?;");
+            PreparedStatement statement = connection.prepareStatement("SELECT * FROM pickups WHERE tpep_pickup_datetime >= ? AND tpep_pickup_datetime < ?;");
             statement.setObject(1, start);
             statement.setObject(2, end);
             System.out.println(statement.toString());

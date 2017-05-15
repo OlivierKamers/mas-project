@@ -26,8 +26,6 @@ import com.github.rinde.rinsim.core.model.time.TimeLapse;
 import com.github.rinde.rinsim.event.Listener;
 import com.github.rinde.rinsim.geom.Graph;
 import com.github.rinde.rinsim.geom.MultiAttributeData;
-import com.github.rinde.rinsim.geom.io.DotGraphIO;
-import com.github.rinde.rinsim.geom.io.Filters;
 import com.github.rinde.rinsim.ui.View;
 import com.github.rinde.rinsim.ui.renderers.PlaneRoadModelRenderer;
 import com.github.rinde.rinsim.ui.renderers.RoadUserRenderer;
@@ -36,22 +34,17 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Monitor;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
 import static com.google.common.collect.Maps.newHashMap;
 
 /**
- * Example showing a fleet of taxis that have to pickup and transport customers
- * around the city of Manhattan.
- * <p>
- * If this class is run on MacOS it might be necessary to use
- * -XstartOnFirstThread as a VM argument.
+ * MAS Project 2017
  *
- * @author Rinde van Lon
+ * @author Evert Etienne & Olivier Kamers
  */
-public final class TaxiExample {
+public final class MasProject {
     private static final double MAX_SPEED = 50;
     private static final int NUM_TAXIS = 20;
     private static final int NUM_CUSTOMERS = 200;
@@ -61,25 +54,23 @@ public final class TaxiExample {
     private static final int SPEED_UP = 1;
     private static final int MAX_CAPACITY = 3;
     private static final double NEW_CUSTOMER_PROB = .007;
-    private static final String MAP_FILE = "src/main/resources/maps/manhattan.dot";
     private static final Map<String, Graph<MultiAttributeData>> GRAPH_CACHE = newHashMap();
     private static final long TEST_STOP_TIME = 20 * 60 * 1000;
     private static final int TEST_SPEED_UP = 1;
 
-    private TaxiExample() {
+    private MasProject() {
     }
 
     /**
-     * Starts the {@link TaxiExample}.
+     * Starts the {@link MasProject}.
      *
-     * @param args The first option may optionally indicate the end time of the
-     *             simulation.
+     * @param args The first option may optionally indicate the end time of the simulation.
      */
     public static void main(@Nullable String[] args) {
         final long endTime = args != null && args.length >= 1 ? Long
                 .parseLong(args[0]) : Long.MAX_VALUE;
 
-        run(false, endTime, MAP_FILE, null /* new Display() */, null, null);
+        run(false, endTime, null /* new Display() */, null, null);
     }
 
     /**
@@ -88,73 +79,62 @@ public final class TaxiExample {
      * @param testing If <code>true</code> enables the test mode.
      */
     public static void run(boolean testing) {
-        run(testing, Long.MAX_VALUE, MAP_FILE, null, null, null);
+        run(testing, Long.MAX_VALUE, null, null, null);
     }
 
     /**
      * Starts the example.
      *
-     * @param testing   Indicates whether the method should run in testing mode.
-     * @param endTime   The time at which simulation should stop.
-     * @param graphFile The graph that should be loaded.
-     * @param display   The display that should be used to show the ui on.
-     * @param m         The monitor that should be used to show the ui on.
-     * @param list      A listener that will receive callbacks from the ui.
+     * @param testing Indicates whether the method should run in testing mode.
+     * @param endTime The time at which simulation should stop.
+     * @param display The display that should be used to show the ui on.
+     * @param m       The monitor that should be used to show the ui on.
+     * @param list    A listener that will receive callbacks from the ui.
      * @return The simulator instance.
      */
-    public static Simulator run(boolean testing, final long endTime,
-                                String graphFile,
-                                @Nullable Display display, @Nullable Monitor m, @Nullable Listener list) {
+    public static Simulator run(boolean testing, final long endTime, @Nullable Display display, @Nullable Monitor m, @Nullable Listener list) {
 
         final View.Builder view = createGui(testing, display, m, list);
 
-        // use map of Manhattan
         final Simulator simulator = Simulator.builder()
                 .addModel(RoadModelBuilders.plane()
                         .withMinPoint(Helper.convertToPointInBoundaries(Helper.ROADMODEL_MIN_POINT))
                         .withMaxPoint(Helper.convertToPointInBoundaries(Helper.ROADMODEL_MAX_POINT))
                         .withMaxSpeed(MAX_SPEED)
                 )
-//                .addModel(RoadModelBuilders.staticGraph(loadGraph(graphFile)))
                 .addModel(DefaultPDPModel.builder())
                 .addModel(view)
                 .build();
+
         final RandomGenerator rng = simulator.getRandomGenerator();
 
-        final RoadModel roadModel = simulator.getModelProvider().getModel(
-                RoadModel.class);
+        final RoadModel roadModel = simulator.getModelProvider().getModel(RoadModel.class);
+
         for (int i = 0; i < NUM_TAXIS; i++) {
-            simulator.register(new Taxi(roadModel.getRandomPosition(rng),
-                    TAXI_CAPACITY));
+            simulator.register(new Taxi(roadModel.getRandomPosition(rng), TAXI_CAPACITY));
         }
         MySQLDataLoader dataLoader = new MySQLDataLoader();
-        List<HistoricalData> data = dataLoader.readN(NUM_CUSTOMERS);
-        for (HistoricalData h : data) {
-            simulator.register(new Customer(h));
-        }
-
-//        for (int i = 0; i < NUM_CUSTOMERS; i++) {
-//            simulator.register(new Customer(
-//                    Parcel.builder(roadModel.getRandomPosition(rng),
-//                            roadModel.getRandomPosition(rng))
-//                            .serviceDuration(SERVICE_DURATION)
-//                            .neededCapacity(1 + rng.nextInt(MAX_CAPACITY))
-//                            .buildDTO()));
-//        }
 
         simulator.addTickListener(new TickListener() {
             @Override
             public void tick(TimeLapse time) {
+//                System.out.println("Current DateTime: " + Helper.START_TIME.plusNanos(time.getStartTime()* 1000000).toString());
+
                 if (time.getStartTime() > endTime) {
                     simulator.stop();
-                } else if (rng.nextDouble() < NEW_CUSTOMER_PROB) {
-                    simulator.register(new Customer(
-                            Parcel
-                                    .builder(roadModel.getRandomPosition(rng),
-                                            roadModel.getRandomPosition(rng))
-                                    .serviceDuration(SERVICE_DURATION)
-                                    .neededCapacity(1 + rng.nextInt(MAX_CAPACITY))
-                                    .buildDTO()));
+                }
+
+                for (Customer c : roadModel.getObjectsOfType(Customer.class)) {
+                    simulator.unregister(c);
+                }
+
+                List<HistoricalData> data = dataLoader.read(
+                        Helper.START_TIME.plusNanos(time.getStartTime() * 1000000),
+                        Helper.START_TIME.plusNanos(time.getEndTime() * 1000000)
+                );
+
+                for (HistoricalData h : data) {
+                    simulator.register(new Customer(h));
                 }
             }
 
@@ -183,9 +163,10 @@ public final class TaxiExample {
                         .withImageAssociation(
                                 Taxi.class, "/graphics/flat/taxi-32.png")
                         .withImageAssociation(
-                                Customer.class, "/graphics/flat/person-red-32.png"))
+                                Customer.class, "/graphics/flat/person-red-32.png")
+                        .withToStringLabel())
                 .with(TaxiRenderer.builder(TaxiRenderer.Language.ENGLISH))
-                .withTitleAppendix("Evert & Oli baas");
+                .withTitleAppendix("MAS Project 2017 - Evert Etienne & Olivier Kamers");
 
         if (testing) {
             view = view.withAutoClose()
@@ -203,22 +184,6 @@ public final class TaxiExample {
                     .withAutoClose();
         }
         return view;
-    }
-
-    // load the graph file
-    static Graph<MultiAttributeData> loadGraph(String name) {
-        try {
-            if (GRAPH_CACHE.containsKey(name)) {
-                return GRAPH_CACHE.get(name);
-            }
-            final Graph<MultiAttributeData> g = DotGraphIO
-                    .getMultiAttributeGraphIO(Filters.selfCycleFilter())
-                    .read(name);
-            GRAPH_CACHE.put(name, g);
-            return g;
-        } catch (final IOException e) {
-            throw new IllegalStateException(e);
-        }
     }
 
     /**
@@ -241,6 +206,13 @@ public final class TaxiExample {
 
         @Override
         public void initRoadPDP(RoadModel pRoadModel, PDPModel pPdpModel) {
+        }
+
+        @Override
+        public String toString() {
+            return "Customer{" +
+                    this.getPickupLocation().toString() +
+                    "}";
         }
     }
 }
