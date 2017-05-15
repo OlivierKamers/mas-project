@@ -37,7 +37,6 @@ import org.eclipse.swt.widgets.Monitor;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
@@ -128,14 +127,10 @@ public final class TaxiExample {
             simulator.register(new Taxi(roadModel.getRandomPosition(rng),
                     TAXI_CAPACITY));
         }
-        try {
-            MySQLDataLoader dataLoader = new MySQLDataLoader();
-            List<HistoricalData> data = dataLoader.readN(NUM_CUSTOMERS);
-            for (HistoricalData h : data) {
-                simulator.register(new Customer(h));
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
+        MySQLDataLoader dataLoader = new MySQLDataLoader();
+        List<HistoricalData> data = dataLoader.readN(NUM_CUSTOMERS);
+        for (HistoricalData h : data) {
+            simulator.register(new Customer(h));
         }
 
 //        for (int i = 0; i < NUM_CUSTOMERS; i++) {
@@ -187,6 +182,7 @@ public final class TaxiExample {
                         .withImageAssociation(
                                 Customer.class, "/graphics/flat/person-red-32.png"))
                 .with(TaxiRenderer.builder(TaxiRenderer.Language.ENGLISH))
+                .with(DiscreteFieldRenderer.builder())
                 .withTitleAppendix("Taxi Demo");
 
         if (testing) {
