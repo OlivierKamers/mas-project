@@ -173,17 +173,19 @@ public final class TaxiExample {
             @Nullable Monitor m,
             @Nullable Listener list) {
 
+        FieldGenerator f = new FieldGenerator();
+        DiscreteField df = f.load();
+
         View.Builder view = View.builder()
                 .with(PlaneRoadModelRenderer.builder())
-//                .with(GraphRoadModelRenderer.builder())
+                .with(DiscreteFieldRenderer.builder().withField(df))
                 .with(RoadUserRenderer.builder()
                         .withImageAssociation(
                                 Taxi.class, "/graphics/flat/taxi-32.png")
                         .withImageAssociation(
                                 Customer.class, "/graphics/flat/person-red-32.png"))
                 .with(TaxiRenderer.builder(TaxiRenderer.Language.ENGLISH))
-                .with(DiscreteFieldRenderer.builder())
-                .withTitleAppendix("Taxi Demo");
+                .withTitleAppendix("Evert & Oli baas");
 
         if (testing) {
             view = view.withAutoClose()

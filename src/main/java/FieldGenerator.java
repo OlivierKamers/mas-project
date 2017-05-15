@@ -5,13 +5,17 @@ import java.util.List;
 
 public class FieldGenerator {
     private static final int MATRIX_STEP = 100;
-    private static final int TIME_STEP = 100;
+    private static final int TIME_STEP = 50;
     private double[][][] field;
+    private int xDim;
+    private int yDim;
 
     public FieldGenerator() {
 //        Point minPoint = Helper.convertToPointInBoundaries(Helper.ROADMODEL_MIN_POINT);
 //        Point maxPoint = Helper.convertToPointInBoundaries(Helper.ROADMODEL_MAX_POINT);
-        this.field = new double[TIME_STEP][MATRIX_STEP][MATRIX_STEP];
+        this.xDim = (int) (MATRIX_STEP * Helper.getXScale());
+        this.yDim = (int) (MATRIX_STEP * Helper.getYScale());
+        this.field = new double[TIME_STEP][this.xDim][this.yDim];
     }
 
     public static void main(String[] args) {
@@ -31,18 +35,18 @@ public class FieldGenerator {
     }
 
     private double[][] parseData(List<HistoricalData> data) {
-        double[][] fieldFrame = new double[MATRIX_STEP][MATRIX_STEP];
+        double[][] fieldFrame = new double[this.xDim][this.yDim];
         double max = 0;
         for (HistoricalData h : data) {
-            int xBin = (int) Math.floor(h.getDropoffPoint().x / Helper.ROADMODEL_BOUNDARIES_SCALE * MATRIX_STEP);
-            int yBin = (int) Math.floor(h.getDropoffPoint().y / Helper.ROADMODEL_BOUNDARIES_SCALE * MATRIX_STEP);
+            int xBin = (int) Math.floor(h.getDropoffPoint().x / Helper.ROADMODEL_BOUNDARIES_SCALE * xDim);
+            int yBin = (int) Math.floor(h.getDropoffPoint().y / Helper.ROADMODEL_BOUNDARIES_SCALE * yDim);
             fieldFrame[xBin][yBin] += 1;
             max = fieldFrame[xBin][yBin] > max ? fieldFrame[xBin][yBin] : max;
         }
 
         //Normalize
-        for (int x = 0; x < MATRIX_STEP; x++) {
-            for (int y = 0; y < MATRIX_STEP; y++) {
+        for (int x = 0; x < xDim; x++) {
+            for (int y = 0; y < yDim; y++) {
                 fieldFrame[x][y] /= max;
             }
         }
