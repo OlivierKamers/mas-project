@@ -45,6 +45,20 @@ public class MySQLDataLoader {
     }
 
     /**
+     * Read N first data from the database table.
+     */
+    List<HistoricalData> readN(int N) throws SQLException {
+        PreparedStatement statement = connection.prepareStatement("SELECT * FROM pickups LIMIT ?;");
+        statement.setInt(1, N);
+        ResultSet rst = statement.executeQuery();
+        ArrayList<HistoricalData> result = new ArrayList<>();
+        while (rst.next()) {
+            result.add(parse(rst));
+        }
+        return result;
+    }
+
+    /**
      * Read data with tpep_pickup_datetime between two dates.
      */
     List<HistoricalData> read(LocalDateTime start, LocalDateTime end) throws SQLException {

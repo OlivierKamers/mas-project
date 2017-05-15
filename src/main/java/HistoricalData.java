@@ -20,10 +20,10 @@ public class HistoricalData {
         this.passengerCount = passengerCount;
         this.pickupLongitude = pickupLongitude;
         this.pickupLatitude = -pickupLatitude;
-        this.pickupPoint = new Point(pickupLongitude, -pickupLatitude);
+        this.pickupPoint = Helper.convertToPointInBoundaries(pickupLongitude, getPickupLatitude());
         this.dropoffLongitude = dropoffLongitude;
         this.dropoffLatitude = -dropoffLatitude;
-        this.dropoffPoint = new Point(dropoffLongitude, -dropoffLatitude);
+        this.dropoffPoint = Helper.convertToPointInBoundaries(dropoffLongitude, getDropoffLatitude());
     }
 
     public static HistoricalData parse(String pickupTime, String passengerCount, String pickupLongitude, String pickupLatitude, String dropoffLongitude, String dropoffLatitude) throws ParseException {

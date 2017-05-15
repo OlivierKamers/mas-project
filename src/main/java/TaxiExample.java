@@ -26,7 +26,6 @@ import com.github.rinde.rinsim.core.model.time.TimeLapse;
 import com.github.rinde.rinsim.event.Listener;
 import com.github.rinde.rinsim.geom.Graph;
 import com.github.rinde.rinsim.geom.MultiAttributeData;
-import com.github.rinde.rinsim.geom.Point;
 import com.github.rinde.rinsim.geom.io.DotGraphIO;
 import com.github.rinde.rinsim.geom.io.Filters;
 import com.github.rinde.rinsim.ui.View;
@@ -54,21 +53,19 @@ import static com.google.common.collect.Maps.newHashMap;
  * @author Rinde van Lon
  */
 public final class TaxiExample {
-
+    private static final double MAX_SPEED = 50;
     private static final int NUM_TAXIS = 20;
-    private static final int NUM_CUSTOMERS = 30;
+    private static final int NUM_CUSTOMERS = 200;
     // time in ms
     private static final long SERVICE_DURATION = 60000;
     private static final int TAXI_CAPACITY = 10;
-    private static final int SPEED_UP = 4;
+    private static final int SPEED_UP = 1;
     private static final int MAX_CAPACITY = 3;
     private static final double NEW_CUSTOMER_PROB = .007;
     private static final String MAP_FILE = "src/main/resources/maps/manhattan.dot";
     private static final Map<String, Graph<MultiAttributeData>> GRAPH_CACHE = newHashMap();
     private static final long TEST_STOP_TIME = 20 * 60 * 1000;
-    private static final int TEST_SPEED_UP = 64;
-    private static Point ROADMODEL_MIN_POINT = new Point(-74.0193099976, -40.8774528503);
-    private static Point ROADMODEL_MAX_POINT = new Point(-73.9104537964, -40.7011375427);
+    private static final int TEST_SPEED_UP = 1;
 
     private TaxiExample() {
     }
@@ -114,7 +111,11 @@ public final class TaxiExample {
 
         // use map of Manhattan
         final Simulator simulator = Simulator.builder()
-                .addModel(RoadModelBuilders.plane().withMinPoint(ROADMODEL_MIN_POINT).withMaxPoint(ROADMODEL_MAX_POINT))
+                .addModel(RoadModelBuilders.plane()
+                        .withMinPoint(Helper.convertToPointInBoundaries(Helper.ROADMODEL_MIN_POINT))
+                        .withMaxPoint(Helper.convertToPointInBoundaries(Helper.ROADMODEL_MAX_POINT))
+                        .withMaxSpeed(MAX_SPEED)
+                )
 //                .addModel(RoadModelBuilders.staticGraph(loadGraph(graphFile)))
                 .addModel(DefaultPDPModel.builder())
                 .addModel(view)
@@ -129,7 +130,7 @@ public final class TaxiExample {
         }
         try {
             MySQLDataLoader dataLoader = new MySQLDataLoader();
-            List<HistoricalData> data = dataLoader.readAll();
+            List<HistoricalData> data = dataLoader.readN(NUM_CUSTOMERS);
             for (HistoricalData h : data) {
                 simulator.register(new Customer(h));
             }
@@ -231,7 +232,13 @@ public final class TaxiExample {
         }
 
         Customer(HistoricalData data) {
-            super(Parcel.builder(data.getPickupPoint(), data.getDropoffPoint()).buildDTO());
+            this(Parcel.builder(
+                    data.getPickupPoint(),
+                    data.getDropoffPoint()
+            )
+                    .neededCapacity(data.getPassengerCount())
+                    .serviceDuration(SERVICE_DURATION)
+                    .buildDTO());
         }
 
         @Override
