@@ -30,7 +30,7 @@ public class Customer extends Parcel implements CommUser, TickListener {
     // time in ms
     private static final long SERVICE_DURATION = 10000;
     private static final double MAX_RANGE = Double.MAX_VALUE;
-    private static final int MAX_TICKS_TO_WAIT_FOR_ACCEPT = 30;
+    private static final int MAX_TICKS_TO_WAIT_FOR_ACCEPT = 5;
 
     private long id;
     private Optional<CommDevice> commDevice;
@@ -120,6 +120,8 @@ public class Customer extends Parcel implements CommUser, TickListener {
             commDevice.get().send(deal, highestBid.getTaxi());
             ticksSinceSentDeal = 0;
             setState(CustomerState.SENT_DEAL);
+        } else if (bids.isEmpty()) {
+            sendRequest();
         }
     }
 

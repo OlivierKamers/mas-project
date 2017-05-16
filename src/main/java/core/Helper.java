@@ -10,7 +10,7 @@ public class Helper {
     public static final Point ROADMODEL_MIN_POINT = new Point(-74.0193099976, -40.8774528503);
     public static final Point ROADMODEL_MAX_POINT = new Point(-73.9104537964, -40.7011375427);
     public static final LocalDateTime START_TIME = LocalDateTime.of(2015, 1, 1, 0, 0, 0);
-    public static final LocalDateTime STOP_TIME = LocalDateTime.of(2015, 1, 1, 0, 0, 5);
+    public static final LocalDateTime STOP_TIME = LocalDateTime.of(2015, 1, 1, 0, 1, 0);
 
     public static Point convertToPointInBoundaries(double lon, double lat) {
         return Point.multiply(

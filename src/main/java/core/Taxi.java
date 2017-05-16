@@ -84,14 +84,14 @@ public class Taxi extends Vehicle implements CommUser {
             return;
         }
 
-        // Idle core.Taxi (no objective for now, later no passengers)
-        if (!currentCustomer.isPresent()) {
+        // Idle Taxi (no objective for now, later no passengers)
+        if (shouldHandleContractNet()) {
             handleContractNet();
 //            curr = Optional.fromNullable(RoadModels.findClosestObject(
 //                    rm.getPosition(this), rm, Parcel.class));
         }
 
-        // core.Taxi with a goal
+        // Taxi with a goal
         if (currentCustomer.isPresent()) {
             final boolean inCargo = pm.containerContains(this, currentCustomer.get());
             // sanity check: if it is not in our cargo AND it is also not on the
@@ -119,10 +119,15 @@ public class Taxi extends Vehicle implements CommUser {
         }
     }
 
+    /**
+     * Check whether this Taxi can pickup more customers.
+     */
+    private boolean shouldHandleContractNet() {
+        return !currentCustomer.isPresent();
+    }
+
     private void handleContractNet() {
         ImmutableList<Message> messages = commDevice.get().getUnreadMessages();
-        // TODO: refactor naar case over state ipv loop over messages
-
         if (getState() == TaxiState.IDLE) {
             handleIdle(messages);
         }
@@ -146,17 +151,17 @@ public class Taxi extends Vehicle implements CommUser {
             messages.stream()
                     .filter(m -> m.getContents() instanceof ContractRequest)
                     .map(Message::getContents)
-                    .forEach(request -> handleRequest((ContractRequest) request));
+                    .forEach(request -> sendBid((ContractRequest) request));
         }
     }
 
     /**
-     * Handle a ContractRequest
+     * Handle a ContractRequest.
      * Calculates the bid and sends a ContractBid to the customer.
      *
      * @param request the request.
      */
-    private void handleRequest(ContractRequest request) {
+    private void sendBid(ContractRequest request) {
         Customer customer = request.getCustomer();
         ContractBid bid = new ContractBid(this, getBid(customer));
         commDevice.get().send(bid, customer);
