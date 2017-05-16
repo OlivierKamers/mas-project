@@ -14,7 +14,10 @@ package core;/*
  * limitations under the License.
  */
 
-import com.github.rinde.rinsim.core.model.comm.*;
+import com.github.rinde.rinsim.core.model.comm.CommDevice;
+import com.github.rinde.rinsim.core.model.comm.CommDeviceBuilder;
+import com.github.rinde.rinsim.core.model.comm.CommUser;
+import com.github.rinde.rinsim.core.model.comm.Message;
 import com.github.rinde.rinsim.core.model.pdp.PDPModel;
 import com.github.rinde.rinsim.core.model.pdp.Parcel;
 import com.github.rinde.rinsim.core.model.pdp.Vehicle;
@@ -28,6 +31,8 @@ import core.messages.ContractAccept;
 import core.messages.ContractBid;
 import core.messages.ContractDeal;
 import core.messages.ContractRequest;
+
+import java.util.Comparator;
 
 /**
  * Implementation of a very simple taxi agent. It moves to the closest customer,
@@ -49,6 +54,14 @@ public class Taxi extends Vehicle implements CommUser {
                 .speed(SPEED)
                 .build());
         curr = Optional.absent();
+    }
+
+    private TaxiState getState() {
+        return state;
+    }
+
+    private void setState(TaxiState state) {
+        this.state = state;
     }
 
     @Override
@@ -85,6 +98,7 @@ public class Taxi extends Vehicle implements CommUser {
                 if (rm.getPosition(this).equals(curr.get().getDeliveryLocation())) {
                     // deliver when we arrive
                     pm.deliver(this, curr.get(), time);
+                    setState(TaxiState.IDLE);
                 }
             } else {
                 // it is still available, go there as fast as possible
@@ -92,6 +106,7 @@ public class Taxi extends Vehicle implements CommUser {
                 if (rm.equalPosition(this, curr.get())) {
                     // pickup customer
                     pm.pickup(this, curr.get(), time);
+                    setState(TaxiState.HAS_CUSTOMER);
                 }
             }
         }
@@ -101,43 +116,68 @@ public class Taxi extends Vehicle implements CommUser {
         ImmutableList<Message> messages = commDevice.get().getUnreadMessages();
         // TODO: refactor naar case over state ipv loop over messages
 
-        if (state == TaxiState.IDLE) {
+        if (getState() == TaxiState.IDLE) {
             handleIdle(messages);
         }
+    }
 
-        for (Message msg : messages) {
-            MessageContents contents = msg.getContents();
-            if (contents instanceof ContractRequest) {
-                handleRequest((ContractRequest) contents);
-            } else if (contents instanceof ContractDeal) {
-                handleDeal((ContractDeal) contents);
-            }
+    /**
+     * This method will accept the best deal it received
+     * or send a ContractBid to every customer that sent a ContractRequest if no deal was received.
+     *
+     * @param messages All unread messages for this taxi.
+     */
+    private void handleIdle(ImmutableList<Message> messages) {
+        java.util.Optional<ContractDeal> deal = messages.stream()
+                .filter(m -> m.getContents() instanceof ContractDeal)
+                .map(msg -> (ContractDeal) msg.getContents())
+                .sorted(Comparator.comparingDouble(ContractDeal::getBid))
+                .findFirst();
+        if (deal.isPresent()) {
+            acceptDeal(deal.get());
+        } else {
+            messages.stream()
+                    .filter(m -> m.getContents() instanceof ContractRequest)
+                    .map(Message::getContents)
+                    .forEach(request -> handleRequest((ContractRequest) request));
         }
     }
 
-    private void handleIdle(ImmutableList<Message> messages) {
-        messages.stream().filter()
-        Customer customer = request.getCustomer();
-        ContractBid bid = new ContractBid(this, getBid(customer));
-        commDevice.get().send(bid, customer);
-    }
-
+    /**
+     * Handle a ContractRequest
+     * Calculates the bid and sends a ContractBid to the customer.
+     *
+     * @param request the request.
+     */
     private void handleRequest(ContractRequest request) {
         Customer customer = request.getCustomer();
         ContractBid bid = new ContractBid(this, getBid(customer));
         commDevice.get().send(bid, customer);
     }
 
+    /**
+     * Calculate a bid for the given customer.
+     *
+     * @param customer the customer to calculate the bid for.
+     * @return the inverse of the distance between this taxi and the customer or 0 if either of the positions are absent.
+     */
     private double getBid(Customer customer) {
+        if (getPosition().isPresent() && customer.getPosition().isPresent())
+            return 1.0 / Point.distance(getPosition().get(), customer.getPosition().get());
         return 0;
     }
 
-    private void handleDeal(ContractDeal deal) {
+    /**
+     * Handles a ContractDeal: accepts it and sets the Customer as next target.
+     *
+     * @param deal the deal to accept.
+     */
+    private void acceptDeal(ContractDeal deal) {
         Customer customer = deal.getCustomer();
         ContractAccept accept = new ContractAccept(this);
         commDevice.get().send(accept, customer);
         curr = Optional.of(customer);
-        state = TaxiState.ACCEPTED;
+        setState(TaxiState.ACCEPTED);
     }
 
     @Override
@@ -152,6 +192,13 @@ public class Taxi extends Vehicle implements CommUser {
                 .setMaxRange(MAX_RANGE)
                 .build()
         );
+    }
+
+    @Override
+    public String toString() {
+        return new StringBuilder().append("Taxi{")
+                .append(getState())
+                .append("}").toString();
     }
 
     enum TaxiState {

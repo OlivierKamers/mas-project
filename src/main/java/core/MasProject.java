@@ -162,11 +162,11 @@ public final class MasProject {
                 .with(PlaneRoadModelRenderer.builder())
                 .with(DiscreteFieldRenderer.builder().withField(df))
                 .with(RoadUserRenderer.builder()
-                                .withImageAssociation(
-                                        Taxi.class, "/graphics/flat/taxi-32.png")
-                                .withImageAssociation(
-                                        Customer.class, "/graphics/flat/person-red-32.png")
-//                        .withToStringLabel()
+                        .withImageAssociation(
+                                Taxi.class, "/graphics/flat/taxi-32.png")
+                        .withImageAssociation(
+                                Customer.class, "/graphics/flat/person-red-32.png")
+                        .withToStringLabel()
                 )
                 .with(TaxiRenderer.builder(TaxiRenderer.Language.ENGLISH))
                 .withTitleAppendix("MAS Project 2017 - Evert Etienne & Olivier Kamers")

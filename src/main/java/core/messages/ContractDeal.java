@@ -8,12 +8,18 @@ import core.Customer;
  */
 public class ContractDeal implements MessageContents {
     private Customer customer;
+    private double bid;
 
-    public ContractDeal(Customer customer) {
+    public ContractDeal(Customer customer, double bid) {
         this.customer = customer;
+        this.bid = bid;
     }
 
     public Customer getCustomer() {
         return customer;
+    }
+
+    public double getBid() {
+        return bid;
     }
 }

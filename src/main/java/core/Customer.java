@@ -50,6 +50,14 @@ public class Customer extends Parcel implements CommUser, TickListener {
                 .buildDTO());
     }
 
+    private CustomerState getState() {
+        return state;
+    }
+
+    private void setState(CustomerState state) {
+        this.state = state;
+    }
+
     @Override
     public void initRoadPDP(RoadModel pRoadModel, PDPModel pPdpModel) {
         sendRequest();
@@ -57,15 +65,8 @@ public class Customer extends Parcel implements CommUser, TickListener {
 
     private void sendRequest() {
         commDevice.get().broadcast(new ContractRequest(this));
-        state = CustomerState.SENT_REQUEST;
+        setState(CustomerState.SENT_REQUEST);
 
-    }
-
-    @Override
-    public String toString() {
-        return new StringBuilder().append("core.Customer{")
-                .append(this.getPickupLocation().toString())
-                .append("}").toString();
     }
 
     @Override
@@ -89,9 +90,9 @@ public class Customer extends Parcel implements CommUser, TickListener {
     public void tick(TimeLapse timeLapse) {
         ImmutableList<Message> messages = commDevice.get().getUnreadMessages();
 
-        if (state == CustomerState.SENT_REQUEST) {
+        if (getState() == CustomerState.SENT_REQUEST) {
             handleSentRequest(messages);
-        } else if (state == CustomerState.SENT_DEAL) {
+        } else if (getState() == CustomerState.SENT_DEAL) {
             handleSentDeal(messages);
         }
 //        for (Message msg : messages) {
@@ -107,13 +108,16 @@ public class Customer extends Parcel implements CommUser, TickListener {
     private void handleSentRequest(ImmutableList<Message> messages) {
         bids.addAll(messages.stream()
                 .filter(msg -> msg.getContents() instanceof ContractBid)
-                .map(msg -> (ContractBid) msg.getContents()).collect(Collectors.toList()));
-        bids.sort(Comparator.comparingDouble(ContractBid::getBid));
-        // Send a deal to the highest bidder
-        ContractBid highestBid = bids.remove(0);
-        ContractDeal deal = new ContractDeal(this);
-        commDevice.get().send(deal, highestBid.getTaxi());
-        state = CustomerState.SENT_DEAL;
+                .map(msg -> (ContractBid) msg.getContents())
+                .collect(Collectors.toList()));
+        if (!bids.isEmpty()) {
+            bids.sort(Comparator.comparingDouble(ContractBid::getBid));
+            // Send a deal to the highest bidder
+            ContractBid highestBid = bids.remove(0);
+            ContractDeal deal = new ContractDeal(this, highestBid.getBid());
+            commDevice.get().send(deal, highestBid.getTaxi());
+            setState(CustomerState.SENT_DEAL);
+        }
     }
 
     private void handleSentDeal(ImmutableList<Message> messages) {
@@ -122,7 +126,7 @@ public class Customer extends Parcel implements CommUser, TickListener {
                 .map(msg -> (ContractAccept) msg.getContents())
                 .findFirst();
         if (accept.isPresent()) {
-            state = CustomerState.TAKEN;
+            setState(CustomerState.TAKEN);
         } else {
             handleSentRequest(messages);
         }
@@ -130,7 +134,14 @@ public class Customer extends Parcel implements CommUser, TickListener {
 
     @Override
     public void afterTick(TimeLapse timeLapse) {
+    }
 
+    @Override
+    public String toString() {
+        return new StringBuilder().append("Customer{")
+//                .append(this.getPickupLocation().toString())
+                .append(getState())
+                .append("}").toString();
     }
 
     enum CustomerState {INIT, SENT_REQUEST, SENT_DEAL, TAKEN}
