@@ -18,10 +18,7 @@ import core.messages.ContractBid;
 import core.messages.ContractDeal;
 import core.messages.ContractRequest;
 
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * A customer with very permissive time windows.
@@ -35,14 +32,14 @@ public class Customer extends Parcel implements CommUser, TickListener {
     private long id;
     private Optional<CommDevice> commDevice;
     private CustomerState state = CustomerState.INIT;
-    private List<ContractBid> bids;
     private int ticksSinceSentDeal;
+    private int ticksSinceCreate;
 
     Customer(long id, ParcelDTO dto) {
         super(dto);
         this.id = id;
-        this.bids = new ArrayList<>();
         this.ticksSinceSentDeal = 0;
+        this.ticksSinceCreate = 0;
     }
 
     Customer(HistoricalData data) {
@@ -73,7 +70,7 @@ public class Customer extends Parcel implements CommUser, TickListener {
     }
 
     private void sendRequest() {
-        commDevice.get().broadcast(new ContractRequest(this));
+        commDevice.get().broadcast(new ContractRequest(this, ticksSinceCreate));
         setState(CustomerState.SENT_REQUEST);
 
     }
@@ -97,6 +94,8 @@ public class Customer extends Parcel implements CommUser, TickListener {
 
     @Override
     public void tick(TimeLapse timeLapse) {
+        ticksSinceCreate += 1;
+
         ImmutableList<Message> messages = commDevice.get().getUnreadMessages();
 
         if (getState() == CustomerState.SENT_REQUEST) {
@@ -108,31 +107,19 @@ public class Customer extends Parcel implements CommUser, TickListener {
     }
 
     private void handleSentRequest(ImmutableList<Message> messages) {
-        bids.addAll(messages.stream()
+        java.util.Optional<ContractBid> highestBid = messages.stream()
                 .filter(msg -> msg.getContents() instanceof ContractBid)
                 .map(msg -> (ContractBid) msg.getContents())
-                .collect(Collectors.toList()));
-        if (canSendDeal()) {
-            bids.sort(Comparator.comparingDouble(ContractBid::getBid).reversed());
-            // Send a deal to the highest bidder
-            ContractBid highestBid = bids.remove(0);
-            ContractDeal deal = new ContractDeal(this, highestBid.getBid());
-            commDevice.get().send(deal, highestBid.getTaxi());
-            ticksSinceSentDeal = 0;
-            setState(CustomerState.SENT_DEAL);
-        } else if (bids.isEmpty()) {
-            sendRequest();
-        }
-    }
+                .sorted(Comparator.comparingDouble(ContractBid::getBid).reversed())
+                .findFirst();
 
-    /**
-     * Check whether a deal can be sent this tick.
-     * True if
-     * - there are bids for this customer
-     * - state is SENT_REQUEST OR (state is SENT_DEAL AND 5 ticks have passed without accept)
-     */
-    private boolean canSendDeal() {
-        return !bids.isEmpty() && ((getState() == CustomerState.SENT_REQUEST) || (getState() == CustomerState.SENT_DEAL && ticksSinceSentDeal >= MAX_TICKS_TO_WAIT_FOR_ACCEPT));
+        if (!highestBid.isPresent())
+            return;
+
+        ContractDeal deal = new ContractDeal(this, highestBid.get().getBid());
+        commDevice.get().send(deal, highestBid.get().getTaxi());
+        ticksSinceSentDeal = 0;
+        setState(CustomerState.SENT_DEAL);
     }
 
     private void handleSentDeal(ImmutableList<Message> messages) {
@@ -143,8 +130,8 @@ public class Customer extends Parcel implements CommUser, TickListener {
         if (accept.isPresent()) {
             System.out.println(toString() + " accepted by " + accept.get().getTaxi().toString());
             setState(CustomerState.TAKEN);
-        } else {
-            handleSentRequest(messages);
+        } else if (ticksSinceSentDeal >= MAX_TICKS_TO_WAIT_FOR_ACCEPT) {
+            sendRequest();
         }
     }
 
