@@ -161,8 +161,11 @@ public final class MasProject {
             DiscreteField df) {
 
         View.Builder view = View.builder()
+                .withSpeedUp(SPEED_UP)
                 .with(PlaneRoadModelRenderer.builder())
-                .with(DiscreteFieldRenderer.builder().withField(df))
+                .with(DiscreteFieldRenderer.builder()
+                        .withField(df)
+                )
                 .with(RoadUserRenderer.builder()
                         .withImageAssociation(
                                 Taxi.class, "/graphics/flat/taxi-32.png")
