@@ -30,6 +30,8 @@ class DiscreteFieldRenderer extends AbstractCanvasRenderer {
     @Override
     public void renderDynamic(GC gc, ViewPort vp, long time) {
         int frameIndex = discreteField.getFrameIndexForTime(time);
+//        System.out.println(time);
+//        System.out.println(frameIndex);
         for (int x = 0; x < discreteField.getXDimension(); x++) {
             for (int y = 0; y < discreteField.getYDimension(); y++) {
                 gc.setBackground(new Color(gc.getDevice(), getRgb(this.discreteField.getValue(frameIndex, x, y))));

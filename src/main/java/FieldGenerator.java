@@ -37,8 +37,8 @@ public class FieldGenerator {
         double[][] fieldFrame = new double[this.xDim][this.yDim];
         double max = 0;
         for (HistoricalData h : data) {
-            int xBin = (int) Math.floor(h.getPickupPoint().x / Helper.ROADMODEL_BOUNDARIES_SCALE * xDim);
-            int yBin = (int) Math.floor(h.getPickupPoint().y / Helper.ROADMODEL_BOUNDARIES_SCALE * yDim);
+            int xBin = (int) Math.floor(h.getPickupPoint().x / Helper.ROADMODEL_BOUNDARIES_SCALE / Helper.getXScale() * xDim);
+            int yBin = (int) Math.floor(h.getPickupPoint().y / Helper.ROADMODEL_BOUNDARIES_SCALE / Helper.getYScale() * yDim);
             fieldFrame[xBin][yBin] += 1;
             max = fieldFrame[xBin][yBin] > max ? fieldFrame[xBin][yBin] : max;
         }

@@ -115,9 +115,10 @@ public final class MasProject {
         simulator.addTickListener(new TickListener() {
             @Override
             public void tick(TimeLapse time) {
-                System.out.println("Customers " + roadModel.getObjectsOfType(Customer.class).size());
+//                System.out.println("Customers " + roadModel.getObjectsOfType(Customer.class).size());
 //                System.out.println("Current DateTime: " + Helper.START_TIME.plusNanos(time.getStartTime() * 1000000).toString());
-
+//                System.out.println(time);
+                
                 if (time.getStartTime() > endTime) {
                     simulator.stop();
                 }

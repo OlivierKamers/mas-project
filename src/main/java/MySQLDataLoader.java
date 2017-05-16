@@ -84,7 +84,7 @@ public class MySQLDataLoader {
             while (rst.next()) {
                 result.add(parse(rst));
             }
-            System.out.println(statement.toString() + " ==> " + result.size() + " pickups.");
+//            System.out.println(statement.toString() + " ==> " + result.size() + " pickups.");
             return result;
         } catch (SQLException e) {
             e.printStackTrace();
