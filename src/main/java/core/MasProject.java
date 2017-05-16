@@ -125,15 +125,17 @@ public final class MasProject {
 //                    simulator.unregister(c);
 //                }
 
-                List<HistoricalData> data = dataLoader.read(
-                        Helper.START_TIME.plusNanos(time.getStartTime() * 1000000),
-                        Helper.START_TIME.plusNanos(time.getEndTime() * 1000000)
-                );
+                if (Helper.START_TIME.plusNanos(time.getEndTime() * 1000000).isBefore(Helper.STOP_TIME)) {
+                    List<HistoricalData> data = dataLoader.read(
+                            Helper.START_TIME.plusNanos(time.getStartTime() * 1000000),
+                            Helper.START_TIME.plusNanos(time.getEndTime() * 1000000)
+                    );
 
-                for (HistoricalData h : data) {
-                    simulator.register(new Customer(h));
-                    // For debugging: print the data
-//                    System.out.println(h.toString());
+                    for (HistoricalData h : data) {
+                        simulator.register(new Customer(h));
+                        // For debugging: print the data
+//                        System.out.println(h.toString());
+                    }
                 }
 
                 // For debugging: only use with small field matrix

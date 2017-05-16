@@ -92,6 +92,7 @@ public class Taxi extends Vehicle implements CommUser {
             if (!inCargo && !rm.containsObject(curr.get())) {
                 System.out.println("Current objective does not exist anymore!");
                 curr = Optional.absent();
+                setState(TaxiState.IDLE);
             } else if (inCargo) {
                 // if it is in cargo, go to its destination
                 rm.moveTo(this, curr.get().getDeliveryLocation(), time);
@@ -131,7 +132,7 @@ public class Taxi extends Vehicle implements CommUser {
         java.util.Optional<ContractDeal> deal = messages.stream()
                 .filter(m -> m.getContents() instanceof ContractDeal)
                 .map(msg -> (ContractDeal) msg.getContents())
-                .sorted(Comparator.comparingDouble(ContractDeal::getBid))
+                .sorted(Comparator.comparingDouble(ContractDeal::getBid).reversed())
                 .findFirst();
         if (deal.isPresent()) {
             acceptDeal(deal.get());

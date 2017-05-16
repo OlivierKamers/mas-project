@@ -111,7 +111,7 @@ public class Customer extends Parcel implements CommUser, TickListener {
                 .map(msg -> (ContractBid) msg.getContents())
                 .collect(Collectors.toList()));
         if (!bids.isEmpty()) {
-            bids.sort(Comparator.comparingDouble(ContractBid::getBid));
+            bids.sort(Comparator.comparingDouble(ContractBid::getBid).reversed());
             // Send a deal to the highest bidder
             ContractBid highestBid = bids.remove(0);
             ContractDeal deal = new ContractDeal(this, highestBid.getBid());
