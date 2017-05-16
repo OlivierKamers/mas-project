@@ -1,3 +1,5 @@
+package core;
+
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -6,7 +8,7 @@ import java.util.List;
 
 
 /**
- * MySQLDataLoader class responsible for loading the historical data from a MySQL data source.
+ * core.MySQLDataLoader class responsible for loading the historical data from a MySQL data source.
  */
 public class MySQLDataLoader {
     static String CONNECTION_STRING = "jdbc:mysql://%s:%s/%s?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=CET";
@@ -23,7 +25,7 @@ public class MySQLDataLoader {
     public static void main(String[] args) {
         MySQLDataLoader loader = new MySQLDataLoader();
         List<HistoricalData> data = loader.readAll();
-//            List<HistoricalData> data = loader.read(LocalDateTime.of(2015, 1, 2, 0, 0, 0), LocalDateTime.of(2015, 1, 3, 0, 0, 0));
+//            List<core.HistoricalData> data = loader.read(LocalDateTime.of(2015, 1, 2, 0, 0, 0), LocalDateTime.of(2015, 1, 3, 0, 0, 0));
         System.out.println(data.size());
         for (HistoricalData d : data) {
             System.out.println(d);

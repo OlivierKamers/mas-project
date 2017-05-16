@@ -1,4 +1,4 @@
-/*
+package core;/*
  * Copyright (C) 2011-2016 Rinde van Lon, iMinds-DistriNet, KU Leuven
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,10 +15,8 @@
  */
 
 import com.github.rinde.rinsim.core.Simulator;
+import com.github.rinde.rinsim.core.model.comm.CommModel;
 import com.github.rinde.rinsim.core.model.pdp.DefaultPDPModel;
-import com.github.rinde.rinsim.core.model.pdp.PDPModel;
-import com.github.rinde.rinsim.core.model.pdp.Parcel;
-import com.github.rinde.rinsim.core.model.pdp.ParcelDTO;
 import com.github.rinde.rinsim.core.model.road.RoadModel;
 import com.github.rinde.rinsim.core.model.road.RoadModelBuilders;
 import com.github.rinde.rinsim.core.model.time.TickListener;
@@ -43,8 +41,6 @@ import java.util.List;
 public final class MasProject {
     private static final double MAX_SPEED = 50;
     private static final int NUM_TAXIS = 20;
-    // time in ms
-    private static final long SERVICE_DURATION = 10000;
     private static final int TAXI_CAPACITY = 10;
     private static final int SPEED_UP = 1;
     private static final long TEST_STOP_TIME = 20 * 60 * 1000;
@@ -97,6 +93,7 @@ public final class MasProject {
                         .withMaxPoint(Helper.convertToPointInBoundaries(Helper.ROADMODEL_MAX_POINT))
                         .withMaxSpeed(MAX_SPEED)
                 )
+                .addModel(CommModel.builder())
                 .addModel(DefaultPDPModel.builder())
                 .addModel(view)
                 .setTimeUnit(SI.MILLI(SI.SECOND))
@@ -115,16 +112,16 @@ public final class MasProject {
         simulator.addTickListener(new TickListener() {
             @Override
             public void tick(TimeLapse time) {
-//                System.out.println("Customers " + roadModel.getObjectsOfType(Customer.class).size());
-//                System.out.println("Current DateTime: " + Helper.START_TIME.plusNanos(time.getStartTime() * 1000000).toString());
+//                System.out.println("Customers " + roadModel.getObjectsOfType(core.Customer.class).size());
+//                System.out.println("Current DateTime: " + core.Helper.START_TIME.plusNanos(time.getStartTime() * 1000000).toString());
 //                System.out.println(time);
-                
+
                 if (time.getStartTime() > endTime) {
                     simulator.stop();
                 }
 
                 // For debugging: clear the previous customers when loading new ones
-//                for (Customer c : roadModel.getObjectsOfType(Customer.class)) {
+//                for (core.Customer c : roadModel.getObjectsOfType(core.Customer.class)) {
 //                    simulator.unregister(c);
 //                }
 
@@ -193,33 +190,5 @@ public final class MasProject {
         return view;
     }
 
-    /**
-     * A customer with very permissive time windows.
-     */
-    static class Customer extends Parcel {
-        Customer(ParcelDTO dto) {
-            super(dto);
-        }
 
-        Customer(HistoricalData data) {
-            this(Parcel.builder(
-                    data.getPickupPoint(),
-                    data.getDropoffPoint()
-            )
-                    .neededCapacity(data.getPassengerCount())
-                    .serviceDuration(SERVICE_DURATION)
-                    .buildDTO());
-        }
-
-        @Override
-        public void initRoadPDP(RoadModel pRoadModel, PDPModel pPdpModel) {
-        }
-
-        @Override
-        public String toString() {
-            return new StringBuilder().append("Customer{")
-                    .append(this.getPickupLocation().toString())
-                    .append("}").toString();
-        }
-    }
 }

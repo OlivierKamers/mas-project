@@ -1,7 +1,5 @@
 
-
-import core.DiscreteField;
-import core.DiscreteFieldRenderer;
+package core;
 
 import javax.annotation.Generated;
 

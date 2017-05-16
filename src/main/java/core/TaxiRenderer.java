@@ -1,4 +1,4 @@
-/*
+package core;/*
  * Copyright (C) 2011-2016 Rinde van Lon, iMinds-DistriNet, KU Leuven
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,6 +22,7 @@ import com.github.rinde.rinsim.core.model.road.RoadModel;
 import com.github.rinde.rinsim.geom.Point;
 import com.github.rinde.rinsim.ui.renderers.CanvasRenderer.AbstractCanvasRenderer;
 import com.github.rinde.rinsim.ui.renderers.ViewPort;
+import com.google.auto.value.AutoValue;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.GC;
 
@@ -101,7 +102,7 @@ public class TaxiRenderer extends AbstractCanvasRenderer {
         }
     }
 
-//    @AutoValue
+    @AutoValue
     abstract static class Builder extends
             AbstractModelBuilder<TaxiRenderer, Void> {
 

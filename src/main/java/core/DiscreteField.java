@@ -1,3 +1,5 @@
+package core;
+
 import java.time.Duration;
 
 public class DiscreteField {

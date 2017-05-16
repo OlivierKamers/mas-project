@@ -1,3 +1,5 @@
+package core;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -8,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * DataLoader class responsible for loading the csv file containing the historical data.
+ * core.DataLoader class responsible for loading the csv file containing the historical data.
  */
 public class DataLoader {
     private static String DELIMITER = ",";
@@ -25,10 +27,10 @@ public class DataLoader {
     public static void main(String[] args) {
         try {
             DataLoader loader = new DataLoader("src/main/resources/data/yellow_tripdata_2015-01_cleaned.csv", LocalDateTime.of(2015, 1, 1, 0, 0, 0));
-//            List<HistoricalData> data = loader.read(Duration.ofMinutes(5));
+//            List<core.HistoricalData> data = loader.read(Duration.ofMinutes(5));
             List<HistoricalData> data = loader.readAll();
             System.out.println(data.size());
-//            for (HistoricalData historicalData : data) {
+//            for (core.HistoricalData historicalData : data) {
 //                System.out.println(historicalData.toString());
 //            }
         } catch (IOException | ParseException e) {

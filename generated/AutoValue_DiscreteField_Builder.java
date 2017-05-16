@@ -1,5 +1,7 @@
 
 
+import core.DiscreteField;
+
 import javax.annotation.Generated;
 
 @Generated("com.google.auto.value.processor.AutoValueProcessor")

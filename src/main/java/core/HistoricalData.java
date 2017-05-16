@@ -1,3 +1,5 @@
+package core;
+
 import com.github.rinde.rinsim.geom.Point;
 
 import java.text.ParseException;
