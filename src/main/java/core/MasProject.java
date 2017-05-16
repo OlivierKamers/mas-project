@@ -105,7 +105,7 @@ public final class MasProject {
         final RoadModel roadModel = simulator.getModelProvider().getModel(RoadModel.class);
 
         for (int i = 0; i < NUM_TAXIS; i++) {
-            simulator.register(new Taxi(roadModel.getRandomPosition(rng), TAXI_CAPACITY));
+            simulator.register(new Taxi(i, roadModel.getRandomPosition(rng), TAXI_CAPACITY));
         }
         MySQLDataLoader dataLoader = new MySQLDataLoader();
 

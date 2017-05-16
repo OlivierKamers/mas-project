@@ -30,16 +30,19 @@ public class Customer extends Parcel implements CommUser, TickListener {
     // time in ms
     private static final long SERVICE_DURATION = 10000;
     private static final double MAX_RANGE = Double.MAX_VALUE;
+    private static final int MAX_TICKS_TO_WAIT_FOR_ACCEPT = 5;
 
     private long id;
     private Optional<CommDevice> commDevice;
     private CustomerState state = CustomerState.INIT;
     private List<ContractBid> bids;
+    private int ticksSinceSentDeal;
 
     Customer(long id, ParcelDTO dto) {
         super(dto);
         this.id = id;
         this.bids = new ArrayList<>();
+        this.ticksSinceSentDeal = 0;
     }
 
     Customer(HistoricalData data) {
@@ -99,6 +102,7 @@ public class Customer extends Parcel implements CommUser, TickListener {
         if (getState() == CustomerState.SENT_REQUEST) {
             handleSentRequest(messages);
         } else if (getState() == CustomerState.SENT_DEAL) {
+            ticksSinceSentDeal += 1;
             handleSentDeal(messages);
         }
     }
@@ -108,14 +112,25 @@ public class Customer extends Parcel implements CommUser, TickListener {
                 .filter(msg -> msg.getContents() instanceof ContractBid)
                 .map(msg -> (ContractBid) msg.getContents())
                 .collect(Collectors.toList()));
-        if (!bids.isEmpty()) {
+        if (canSendDeal()) {
             bids.sort(Comparator.comparingDouble(ContractBid::getBid).reversed());
             // Send a deal to the highest bidder
             ContractBid highestBid = bids.remove(0);
             ContractDeal deal = new ContractDeal(this, highestBid.getBid());
             commDevice.get().send(deal, highestBid.getTaxi());
+            ticksSinceSentDeal = 0;
             setState(CustomerState.SENT_DEAL);
         }
+    }
+
+    /**
+     * Check whether a deal can be sent this tick.
+     * True if
+     * - there are bids for this customer
+     * - state is SENT_REQUEST OR (state is SENT_DEAL AND 5 ticks have passed without accept)
+     */
+    private boolean canSendDeal() {
+        return !bids.isEmpty() && ((getState() == CustomerState.SENT_REQUEST) || (getState() == CustomerState.SENT_DEAL && ticksSinceSentDeal >= MAX_TICKS_TO_WAIT_FOR_ACCEPT));
     }
 
     private void handleSentDeal(ImmutableList<Message> messages) {
@@ -124,6 +139,7 @@ public class Customer extends Parcel implements CommUser, TickListener {
                 .map(msg -> (ContractAccept) msg.getContents())
                 .findFirst();
         if (accept.isPresent()) {
+            System.out.println(toString() + " accepted by " + accept.get().getTaxi().toString());
             setState(CustomerState.TAKEN);
         } else {
             handleSentRequest(messages);

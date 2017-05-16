@@ -42,18 +42,25 @@ import java.util.Comparator;
 public class Taxi extends Vehicle implements CommUser {
     private static final double SPEED = 1000d;
     private static final double MAX_RANGE = Double.MAX_VALUE;
+
+    private final int id;
     private Optional<Customer> currentCustomer;
     private Optional<CommDevice> commDevice;
     private TaxiState state;
 
-    Taxi(Point startPosition, int capacity) {
+    Taxi(int id, Point startPosition, int capacity) {
         super(VehicleDTO.builder()
                 .capacity(capacity)
                 .startPosition(startPosition)
                 .speed(SPEED)
                 .build());
-        currentCustomer = Optional.absent();
+        this.currentCustomer = Optional.absent();
+        this.id = id;
         setState(TaxiState.IDLE);
+    }
+
+    public int getId() {
+        return id;
     }
 
     private TaxiState getState() {
@@ -90,7 +97,7 @@ public class Taxi extends Vehicle implements CommUser {
             // sanity check: if it is not in our cargo AND it is also not on the
             // RoadModel, we cannot go to curr anymore.
             if (!inCargo && !rm.containsObject(currentCustomer.get())) {
-                System.out.println("Current objective does not exist anymore!");
+                System.out.println(toString() + " ==> Current objective does not exist anymore!");
                 currentCustomer = Optional.absent();
                 setState(TaxiState.IDLE);
             } else if (inCargo) {
@@ -99,7 +106,6 @@ public class Taxi extends Vehicle implements CommUser {
                 if (rm.getPosition(this).equals(currentCustomer.get().getDeliveryLocation())) {
                     // deliver when we arrive
                     pm.deliver(this, currentCustomer.get(), time);
-                    setState(TaxiState.IDLE);
                 }
             } else {
                 // it is still available, go there as fast as possible
@@ -198,7 +204,9 @@ public class Taxi extends Vehicle implements CommUser {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder()
-                .append("T{")
+                .append("T")
+                .append(getId())
+                .append("{")
                 .append(getState());
         if (currentCustomer.isPresent())
             sb.append(" ").append(currentCustomer.get().getId());
