@@ -32,6 +32,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Monitor;
 
 import javax.annotation.Nullable;
+import javax.measure.unit.SI;
 import java.util.List;
 
 /**
@@ -41,7 +42,7 @@ import java.util.List;
  */
 public final class MasProject {
     private static final double MAX_SPEED = 50;
-    private static final int NUM_TAXIS = 1000;
+    private static final int NUM_TAXIS = 20;
     // time in ms
     private static final long SERVICE_DURATION = 10000;
     private static final int TAXI_CAPACITY = 10;
@@ -98,6 +99,8 @@ public final class MasProject {
                 )
                 .addModel(DefaultPDPModel.builder())
                 .addModel(view)
+                .setTimeUnit(SI.MILLI(SI.SECOND))
+                .setTickLength(1000L)
                 .build();
 
         final RandomGenerator rng = simulator.getRandomGenerator();
@@ -144,6 +147,7 @@ public final class MasProject {
             public void afterTick(TimeLapse timeLapse) {
             }
         });
+
         simulator.start();
 
         return simulator;
@@ -167,7 +171,8 @@ public final class MasProject {
 //                        .withToStringLabel()
                 )
                 .with(TaxiRenderer.builder(TaxiRenderer.Language.ENGLISH))
-                .withTitleAppendix("MAS Project 2017 - Evert Etienne & Olivier Kamers");
+                .withTitleAppendix("MAS Project 2017 - Evert Etienne & Olivier Kamers")
+                .withFullScreen();
 
         if (testing) {
             view = view.withAutoClose()
