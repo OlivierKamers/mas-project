@@ -96,6 +96,7 @@ public class MySQLDataLoader {
 
     private HistoricalData parse(ResultSet rst) throws SQLException {
         return new HistoricalData(
+                rst.getLong("id"),
                 rst.getTimestamp("tpep_pickup_datetime").toLocalDateTime(),
                 rst.getInt("passenger_count"),
                 rst.getDouble("pickup_longitude"),

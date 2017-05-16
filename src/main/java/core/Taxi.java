@@ -19,7 +19,6 @@ import com.github.rinde.rinsim.core.model.comm.CommDeviceBuilder;
 import com.github.rinde.rinsim.core.model.comm.CommUser;
 import com.github.rinde.rinsim.core.model.comm.Message;
 import com.github.rinde.rinsim.core.model.pdp.PDPModel;
-import com.github.rinde.rinsim.core.model.pdp.Parcel;
 import com.github.rinde.rinsim.core.model.pdp.Vehicle;
 import com.github.rinde.rinsim.core.model.pdp.VehicleDTO;
 import com.github.rinde.rinsim.core.model.road.RoadModel;
@@ -43,9 +42,9 @@ import java.util.Comparator;
 public class Taxi extends Vehicle implements CommUser {
     private static final double SPEED = 1000d;
     private static final double MAX_RANGE = Double.MAX_VALUE;
-    private Optional<Parcel> curr;
+    private Optional<Customer> currentCustomer;
     private Optional<CommDevice> commDevice;
-    private TaxiState state = TaxiState.IDLE;
+    private TaxiState state;
 
     Taxi(Point startPosition, int capacity) {
         super(VehicleDTO.builder()
@@ -53,7 +52,8 @@ public class Taxi extends Vehicle implements CommUser {
                 .startPosition(startPosition)
                 .speed(SPEED)
                 .build());
-        curr = Optional.absent();
+        currentCustomer = Optional.absent();
+        setState(TaxiState.IDLE);
     }
 
     private TaxiState getState() {
@@ -78,35 +78,35 @@ public class Taxi extends Vehicle implements CommUser {
         }
 
         // Idle core.Taxi (no objective for now, later no passengers)
-        if (!curr.isPresent()) {
+        if (!currentCustomer.isPresent()) {
             handleContractNet();
 //            curr = Optional.fromNullable(RoadModels.findClosestObject(
 //                    rm.getPosition(this), rm, Parcel.class));
         }
 
         // core.Taxi with a goal
-        if (curr.isPresent()) {
-            final boolean inCargo = pm.containerContains(this, curr.get());
+        if (currentCustomer.isPresent()) {
+            final boolean inCargo = pm.containerContains(this, currentCustomer.get());
             // sanity check: if it is not in our cargo AND it is also not on the
             // RoadModel, we cannot go to curr anymore.
-            if (!inCargo && !rm.containsObject(curr.get())) {
+            if (!inCargo && !rm.containsObject(currentCustomer.get())) {
                 System.out.println("Current objective does not exist anymore!");
-                curr = Optional.absent();
+                currentCustomer = Optional.absent();
                 setState(TaxiState.IDLE);
             } else if (inCargo) {
                 // if it is in cargo, go to its destination
-                rm.moveTo(this, curr.get().getDeliveryLocation(), time);
-                if (rm.getPosition(this).equals(curr.get().getDeliveryLocation())) {
+                rm.moveTo(this, currentCustomer.get().getDeliveryLocation(), time);
+                if (rm.getPosition(this).equals(currentCustomer.get().getDeliveryLocation())) {
                     // deliver when we arrive
-                    pm.deliver(this, curr.get(), time);
+                    pm.deliver(this, currentCustomer.get(), time);
                     setState(TaxiState.IDLE);
                 }
             } else {
                 // it is still available, go there as fast as possible
-                rm.moveTo(this, curr.get(), time);
-                if (rm.equalPosition(this, curr.get())) {
+                rm.moveTo(this, currentCustomer.get(), time);
+                if (rm.equalPosition(this, currentCustomer.get())) {
                     // pickup customer
-                    pm.pickup(this, curr.get(), time);
+                    pm.pickup(this, currentCustomer.get(), time);
                     setState(TaxiState.HAS_CUSTOMER);
                 }
             }
@@ -177,7 +177,7 @@ public class Taxi extends Vehicle implements CommUser {
         Customer customer = deal.getCustomer();
         ContractAccept accept = new ContractAccept(this);
         commDevice.get().send(accept, customer);
-        curr = Optional.of(customer);
+        currentCustomer = Optional.of(customer);
         setState(TaxiState.ACCEPTED);
     }
 
@@ -197,9 +197,13 @@ public class Taxi extends Vehicle implements CommUser {
 
     @Override
     public String toString() {
-        return new StringBuilder().append("Taxi{")
-                .append(getState())
-                .append("}").toString();
+        StringBuilder sb = new StringBuilder()
+                .append("T{")
+                .append(getState());
+        if (currentCustomer.isPresent())
+            sb.append(" ").append(currentCustomer.get().getId());
+        sb.append("}");
+        return sb.toString();
     }
 
     enum TaxiState {

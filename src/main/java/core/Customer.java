@@ -31,23 +31,29 @@ public class Customer extends Parcel implements CommUser, TickListener {
     private static final long SERVICE_DURATION = 10000;
     private static final double MAX_RANGE = Double.MAX_VALUE;
 
+    private long id;
     private Optional<CommDevice> commDevice;
     private CustomerState state = CustomerState.INIT;
     private List<ContractBid> bids;
 
-    Customer(ParcelDTO dto) {
+    Customer(long id, ParcelDTO dto) {
         super(dto);
-        bids = new ArrayList<>();
+        this.id = id;
+        this.bids = new ArrayList<>();
     }
 
     Customer(HistoricalData data) {
-        this(Parcel.builder(
+        this(data.getId(), Parcel.builder(
                 data.getPickupPoint(),
                 data.getDropoffPoint()
         )
                 .neededCapacity(data.getPassengerCount())
                 .serviceDuration(SERVICE_DURATION)
                 .buildDTO());
+    }
+
+    public long getId() {
+        return id;
     }
 
     private CustomerState getState() {
@@ -95,14 +101,6 @@ public class Customer extends Parcel implements CommUser, TickListener {
         } else if (getState() == CustomerState.SENT_DEAL) {
             handleSentDeal(messages);
         }
-//        for (Message msg : messages) {
-//            MessageContents contents = msg.getContents();
-//            if (contents instanceof ContractBid) {
-//                handleBid((ContractBid) contents);
-//            } else if (contents instanceof ContractAccept) {
-//                handleSentDeal((ContractAccept) contents);
-//            }
-//        }
     }
 
     private void handleSentRequest(ImmutableList<Message> messages) {
@@ -138,7 +136,10 @@ public class Customer extends Parcel implements CommUser, TickListener {
 
     @Override
     public String toString() {
-        return new StringBuilder().append("Customer{")
+        return new StringBuilder()
+                .append("C")
+                .append(getId())
+                .append("{")
 //                .append(this.getPickupLocation().toString())
                 .append(getState())
                 .append("}").toString();
