@@ -31,7 +31,9 @@ import core.messages.ContractBid;
 import core.messages.ContractDeal;
 import core.messages.ContractRequest;
 
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 
 /**
  * Implementation of a very simple taxi agent. It moves to the closest customer,
@@ -44,7 +46,7 @@ public class Taxi extends Vehicle implements CommUser {
     private static final double MAX_RANGE = Double.MAX_VALUE;
 
     private final int id;
-    private Optional<Customer> currentCustomer;
+    private List<Customer> currentCustomers;
     private Optional<CommDevice> commDevice;
     private TaxiState state;
 
@@ -54,7 +56,7 @@ public class Taxi extends Vehicle implements CommUser {
                 .startPosition(startPosition)
                 .speed(SPEED)
                 .build());
-        this.currentCustomer = Optional.absent();
+        this.currentCustomers = new ArrayList<>();
         this.id = id;
         setState(TaxiState.IDLE);
     }
@@ -92,7 +94,7 @@ public class Taxi extends Vehicle implements CommUser {
         }
 
         // Taxi with a goal
-        if (currentCustomer.isPresent()) {
+        if (!currentCustomers.isEmpty()) {
             final boolean inCargo = pm.containerContains(this, currentCustomer.get());
             // sanity check: if it is not in our cargo AND it is also not on the
             // RoadModel, we cannot go to curr anymore.
@@ -123,7 +125,11 @@ public class Taxi extends Vehicle implements CommUser {
      * Check whether this Taxi can pickup more customers.
      */
     private boolean shouldHandleContractNet() {
-        return !currentCustomer.isPresent();
+        return getFreeCapacity() > 0;
+    }
+
+    private double getFreeCapacity() {
+        return getCapacity() - getPDPModel().getContentsSize(this);
     }
 
     private void handleContractNet() {
@@ -140,19 +146,26 @@ public class Taxi extends Vehicle implements CommUser {
      * @param messages All unread messages for this taxi.
      */
     private void handleIdle(ImmutableList<Message> messages) {
+        handleDeals(messages);
+        handleBids(messages);
+    }
+
+    private void handleDeals(ImmutableList<Message> messages) {
         java.util.Optional<ContractDeal> deal = messages.stream()
                 .filter(m -> m.getContents() instanceof ContractDeal)
                 .map(msg -> (ContractDeal) msg.getContents())
+                .filter(m -> getFreeCapacity() >= m.getCustomer().getNeededCapacity())
                 .sorted(Comparator.comparingDouble(ContractDeal::getBid).reversed())
                 .findFirst();
-        if (deal.isPresent()) {
-            acceptDeal(deal.get());
-        } else {
-            messages.stream()
-                    .filter(m -> m.getContents() instanceof ContractRequest)
-                    .map(Message::getContents)
-                    .forEach(request -> sendBid((ContractRequest) request));
-        }
+        deal.ifPresent(this::acceptDeal);
+    }
+
+    private void handleBids(ImmutableList<Message> messages) {
+        messages.stream()
+                .filter(m -> m.getContents() instanceof ContractRequest)
+                .map(m -> (ContractRequest) m.getContents())
+                .filter(m -> getFreeCapacity() >= m.getCustomer().getNeededCapacity())
+                .forEach(this::sendBid);
     }
 
     /**
