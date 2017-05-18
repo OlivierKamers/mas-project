@@ -42,13 +42,16 @@ import java.util.Comparator;
 public class Taxi extends Vehicle implements CommUser {
     private static final double SPEED = 1000d;
     private static final double MAX_RANGE = Double.MAX_VALUE;
+    private static final int FIELD_RANGE = 5;
+
 
     private final int id;
     private Optional<Customer> currentCustomer;
     private Optional<CommDevice> commDevice;
     private TaxiState state;
+    private DiscreteField df;
 
-    Taxi(int id, Point startPosition, int capacity) {
+    Taxi(int id, Point startPosition, int capacity, DiscreteField df) {
         super(VehicleDTO.builder()
                 .capacity(capacity)
                 .startPosition(startPosition)
@@ -56,6 +59,7 @@ public class Taxi extends Vehicle implements CommUser {
                 .build());
         this.currentCustomer = Optional.absent();
         this.id = id;
+        this.df = df;
         setState(TaxiState.IDLE);
     }
 
@@ -116,6 +120,10 @@ public class Taxi extends Vehicle implements CommUser {
                     setState(TaxiState.HAS_CUSTOMER);
                 }
             }
+        } else if (getState() == TaxiState.IDLE) {
+            // Idle
+            Point fieldPoint = df.getNextPosition(this, time.getStartTime(), FIELD_RANGE);
+            rm.moveTo(this, fieldPoint, time);
         }
     }
 

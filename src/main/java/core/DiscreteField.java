@@ -1,5 +1,7 @@
 package core;
 
+import com.github.rinde.rinsim.geom.Point;
+
 import java.time.Duration;
 
 public class DiscreteField {
@@ -58,5 +60,39 @@ public class DiscreteField {
 
     public double getValue(int t, int x, int y) {
         return this.fieldData[t][x][y];
+    }
+
+    public int[] convertMapToFieldCoordinates(Point p) {
+        int xBin = (int) Math.floor(p.x / Helper.ROADMODEL_BOUNDARIES_SCALE / Helper.getXScale() * xDim);
+        int yBin = (int) Math.floor(p.y / Helper.ROADMODEL_BOUNDARIES_SCALE / Helper.getYScale() * yDim);
+        return new int[]{xBin, yBin};
+    }
+
+    // Middle of square
+    public Point convertFieldToMapCoordinates(int xBin, int yBin) {
+        double x = (xBin + 0.5) * Helper.ROADMODEL_BOUNDARIES_SCALE * Helper.getXScale() / xDim;
+        double y = (yBin + 0.5) * Helper.ROADMODEL_BOUNDARIES_SCALE * Helper.getYScale() / yDim;
+        return new Point(x, y);
+    }
+
+    public Point getNextPosition(Taxi taxi, long time, int range) {
+        int t = getFrameIndexForTime(time);
+        int[] pos = convertMapToFieldCoordinates(taxi.getPosition().get());
+        int xPos = pos[0];
+        int yPos = pos[1];
+
+        double maxField = Double.MIN_VALUE;
+        Point maxPoint = taxi.getPosition().get();
+        for (int x = Math.max(0, xPos - range); x <= Math.min(xPos + range, xDim - 1); x++) {
+            for (int y = Math.max(0, yPos - range); y <= Math.min(yPos + range, yDim - 1); y++) {
+                //TODO geen vierkant veld
+                double curVal = getValue(t, x, y);
+                if (curVal > maxField) {
+                    maxPoint = convertFieldToMapCoordinates(x, y);
+                    maxField = curVal;
+                }
+            }
+        }
+        return maxPoint;
     }
 }

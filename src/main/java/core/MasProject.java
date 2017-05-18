@@ -40,7 +40,7 @@ import java.util.List;
  */
 public final class MasProject {
     private static final double MAX_SPEED = 50;
-    private static final int NUM_TAXIS = 20;
+    private static final int NUM_TAXIS = 50;
     private static final int TAXI_CAPACITY = 10;
     private static final int SPEED_UP = 3;
     private static final long TEST_STOP_TIME = 20 * 60 * 1000;
@@ -105,7 +105,7 @@ public final class MasProject {
         final RoadModel roadModel = simulator.getModelProvider().getModel(RoadModel.class);
 
         for (int i = 0; i < NUM_TAXIS; i++) {
-            simulator.register(new Taxi(i, roadModel.getRandomPosition(rng), TAXI_CAPACITY));
+            simulator.register(new Taxi(i, roadModel.getRandomPosition(rng), TAXI_CAPACITY, discreteField));
         }
         MySQLDataLoader dataLoader = new MySQLDataLoader();
 
