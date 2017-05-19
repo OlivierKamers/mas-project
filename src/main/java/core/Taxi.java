@@ -130,7 +130,12 @@ public class Taxi extends Vehicle implements CommUser {
      * Check whether this Taxi can pickup more customers.
      */
     private boolean shouldHandleContractNet() {
+//        return getFreeCapacity() > 0;
         return !currentCustomer.isPresent();
+    }
+
+    private double getFreeCapacity() {
+        return getCapacity() - getPDPModel().getContentsSize(this);
     }
 
     private void handleContractNet() {
@@ -147,19 +152,26 @@ public class Taxi extends Vehicle implements CommUser {
      * @param messages All unread messages for this taxi.
      */
     private void handleIdle(ImmutableList<Message> messages) {
+        handleDeals(messages);
+        handleBids(messages);
+    }
+
+    private void handleDeals(ImmutableList<Message> messages) {
         java.util.Optional<ContractDeal> deal = messages.stream()
                 .filter(m -> m.getContents() instanceof ContractDeal)
                 .map(msg -> (ContractDeal) msg.getContents())
+                .filter(m -> getFreeCapacity() >= m.getCustomer().getNeededCapacity())
                 .sorted(Comparator.comparingDouble(ContractDeal::getBid).reversed())
                 .findFirst();
-        if (deal.isPresent()) {
-            acceptDeal(deal.get());
-        } else {
-            messages.stream()
-                    .filter(m -> m.getContents() instanceof ContractRequest)
-                    .map(Message::getContents)
-                    .forEach(request -> sendBid((ContractRequest) request));
-        }
+        deal.ifPresent(this::acceptDeal);
+    }
+
+    private void handleBids(ImmutableList<Message> messages) {
+        messages.stream()
+                .filter(m -> m.getContents() instanceof ContractRequest)
+                .map(m -> (ContractRequest) m.getContents())
+                .filter(m -> getFreeCapacity() >= m.getCustomer().getNeededCapacity())
+                .forEach(this::sendBid);
     }
 
     /**
