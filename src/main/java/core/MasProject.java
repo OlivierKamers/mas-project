@@ -32,6 +32,7 @@ import org.eclipse.swt.widgets.Monitor;
 import javax.annotation.Nullable;
 import javax.measure.unit.SI;
 import java.util.List;
+import java.util.Random;
 
 /**
  * MAS Project 2017
@@ -45,6 +46,9 @@ public final class MasProject {
     private static final int SPEED_UP = 3;
     private static final long TEST_STOP_TIME = 20 * 60 * 1000;
     private static final int TEST_SPEED_UP = 1;
+    private static final double CUSTOMER_SAMPLE = 0.2;
+
+    private static Random r = new Random();
 
     private MasProject() {
     }
@@ -132,9 +136,13 @@ public final class MasProject {
                     );
 
                     for (HistoricalData h : data) {
-                        simulator.register(new Customer(h));
-                        // For debugging: print the data
-//                        System.out.println(h.toString());
+                        float chance = r.nextFloat();
+                        if (chance <= CUSTOMER_SAMPLE) {
+                            simulator.register(new Customer(h));
+
+                            // For debugging: print the data
+//                            System.out.println(h.toString());
+                        }
                     }
                 }
 
