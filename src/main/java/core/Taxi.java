@@ -101,7 +101,6 @@ public class Taxi extends Vehicle implements CommUser {
             // sanity check: if it is not in our cargo AND it is also not on the
             // RoadModel, we cannot go to curr anymore.
             if (!inCargo && !rm.containsObject(currentCustomer.get())) {
-                System.out.println(toString() + " ==> Current objective does not exist anymore!");
                 currentCustomer = Optional.absent();
                 setState(TaxiState.IDLE);
             } else if (inCargo) {
