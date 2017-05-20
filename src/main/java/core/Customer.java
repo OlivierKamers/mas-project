@@ -11,6 +11,7 @@ import com.github.rinde.rinsim.core.model.road.RoadModel;
 import com.github.rinde.rinsim.core.model.time.TickListener;
 import com.github.rinde.rinsim.core.model.time.TimeLapse;
 import com.github.rinde.rinsim.geom.Point;
+import com.github.rinde.rinsim.util.TimeWindow;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import core.messages.ContractAccept;
@@ -29,6 +30,8 @@ public class Customer extends Parcel implements CommUser, TickListener {
     private static final double MAX_RANGE = Double.MAX_VALUE;
     private static final int MAX_TICKS_TO_WAIT_FOR_ACCEPT = 3;
 
+    private long pickupTime;
+
     private long id;
     private Optional<CommDevice> commDevice;
     private CustomerState state = CustomerState.INIT;
@@ -42,11 +45,14 @@ public class Customer extends Parcel implements CommUser, TickListener {
         this.ticksSinceCreate = 0;
     }
 
-    Customer(HistoricalData data) {
+    Customer(HistoricalData data, TimeLapse time) {
         this(data.getId(), Parcel.builder(
                 data.getPickupPoint(),
                 data.getDropoffPoint()
         )
+                .orderAnnounceTime(time.getStartTime())
+                // TODO: window bepalen
+                .pickupTimeWindow(TimeWindow.create(time.getStartTime(), time.getEndTime() + 1000000))
                 .neededCapacity(data.getPassengerCount())
                 .serviceDuration(SERVICE_DURATION)
                 .buildDTO());
@@ -90,6 +96,14 @@ public class Customer extends Parcel implements CommUser, TickListener {
                 .setMaxRange(MAX_RANGE)
                 .build()
         );
+    }
+
+    public long getPickupTime() {
+        return pickupTime;
+    }
+
+    void setPickupTime(long pickupTime) {
+        this.pickupTime = pickupTime;
     }
 
     @Override
@@ -145,7 +159,6 @@ public class Customer extends Parcel implements CommUser, TickListener {
                 .append("C")
                 .append(getId())
                 .append("{")
-//                .append(this.getPickupLocation().toString())
                 .append(getState())
                 .append("}").toString();
     }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package core;
+package core.statistics;
 
 import com.github.rinde.rinsim.core.model.DependencyProvider;
 import com.github.rinde.rinsim.core.model.Model.AbstractModelVoid;
@@ -34,13 +34,9 @@ import com.github.rinde.rinsim.event.EventAPI;
 import com.github.rinde.rinsim.event.EventDispatcher;
 import com.github.rinde.rinsim.event.Listener;
 import com.github.rinde.rinsim.geom.Point;
-import com.github.rinde.rinsim.pdptw.common.AddParcelEvent;
-import com.github.rinde.rinsim.pdptw.common.AddVehicleEvent;
-import com.github.rinde.rinsim.pdptw.common.StatisticsDTO;
 import com.github.rinde.rinsim.pdptw.common.StatisticsProvider;
-import com.github.rinde.rinsim.scenario.ScenarioController.ScenarioEvent;
-import com.github.rinde.rinsim.scenario.TimeOutEvent;
 import com.google.auto.value.AutoValue;
+import core.Customer;
 
 import java.util.Map;
 
@@ -48,12 +44,11 @@ import static com.github.rinde.rinsim.core.model.pdp.PDPModel.PDPModelEventType.
 import static com.github.rinde.rinsim.core.model.road.GenericRoadModel.RoadEventType.MOVE;
 import static com.github.rinde.rinsim.core.model.time.Clock.ClockEventType.STARTED;
 import static com.github.rinde.rinsim.core.model.time.Clock.ClockEventType.STOPPED;
-import static com.github.rinde.rinsim.scenario.ScenarioController.EventType.SCENARIO_EVENT;
 import static com.google.common.base.Verify.verify;
 import static com.google.common.collect.Maps.newLinkedHashMap;
 
 
-public final class StatsTracker extends AbstractModelVoid implements StatisticsProvider {
+public final class StatsTracker extends AbstractModelVoid {
     private final EventDispatcher eventDispatcher;
     private final TheListener theListener;
     private final Clock clock;
@@ -87,18 +82,7 @@ public final class StatsTracker extends AbstractModelVoid implements StatisticsP
     /**
      * @return A {@link StatisticsDTO} with the current simulation stats.
      */
-    @Override
     public StatisticsDTO getStatistics() {
-        final int vehicleBack = theListener.lastArrivalTimeAtDepot.size();
-        long overTime = 0;
-        if (theListener.simFinish) {
-            for (final Long time : theListener.lastArrivalTimeAtDepot.values()) {
-                if (time - theListener.scenarioEndTime > 0) {
-                    overTime += time - theListener.scenarioEndTime;
-                }
-            }
-        }
-
         long compTime = theListener.computationTime;
         if (compTime == 0) {
             compTime = System.currentTimeMillis() - theListener.startTimeReal;
@@ -108,9 +92,9 @@ public final class StatsTracker extends AbstractModelVoid implements StatisticsP
                 theListener.totalDistance,
                 theListener.totalPickups, theListener.totalDeliveries,
                 theListener.totalParcels, theListener.acceptedParcels,
-                theListener.pickupTardiness, theListener.deliveryTardiness, compTime,
-                clock.getCurrentTime(), theListener.simFinish, vehicleBack,
-                overTime, theListener.totalVehicles, theListener.distanceMap.size(),
+                theListener.pickupWaitingTime, theListener.travelSpeed, compTime,
+                clock.getCurrentTime(), theListener.simFinish,
+                theListener.totalVehicles, theListener.distanceMap.size(),
                 clock.getTimeUnit(), roadModel.getDistanceUnit(),
                 roadModel.getSpeedUnit());
     }
@@ -122,22 +106,6 @@ public final class StatsTracker extends AbstractModelVoid implements StatisticsP
 
     enum StatisticsEventType {
         PICKUP_TARDINESS, DELIVERY_TARDINESS, ALL_VEHICLES_AT_DEPOT;
-    }
-
-    static class StatisticsEvent extends Event {
-        final Parcel parcel;
-        final Vehicle vehicle;
-        final long tardiness;
-        final long time;
-
-        StatisticsEvent(Enum<?> type, Object pIssuer, Parcel p, Vehicle v,
-                        long tar, long tim) {
-            super(type, pIssuer);
-            parcel = p;
-            vehicle = v;
-            tardiness = tar;
-            time = tim;
-        }
     }
 
     /**
@@ -169,9 +137,7 @@ public final class StatsTracker extends AbstractModelVoid implements StatisticsP
 
     class TheListener implements Listener {
 
-        private static final double MOVE_THRESHOLD = 0.0001;
         final Map<MovingRoadUser, Double> distanceMap;
-        final Map<MovingRoadUser, Long> lastArrivalTimeAtDepot;
         // parcels
         int totalParcels;
         int acceptedParcels;
@@ -180,8 +146,8 @@ public final class StatsTracker extends AbstractModelVoid implements StatisticsP
         double totalDistance;
         int totalPickups;
         int totalDeliveries;
-        long pickupTardiness;
-        long deliveryTardiness;
+        long pickupWaitingTime;
+        float travelSpeed;
 
         // simulation
         long startTimeReal;
@@ -199,12 +165,11 @@ public final class StatsTracker extends AbstractModelVoid implements StatisticsP
             totalVehicles = 0;
             distanceMap = newLinkedHashMap();
             totalDistance = 0d;
-            lastArrivalTimeAtDepot = newLinkedHashMap();
 
             totalPickups = 0;
             totalDeliveries = 0;
-            pickupTardiness = 0;
-            deliveryTardiness = 0;
+            pickupWaitingTime = 0;
+            travelSpeed = 0;
 
             simFinish = false;
         }
@@ -215,7 +180,6 @@ public final class StatsTracker extends AbstractModelVoid implements StatisticsP
                 startTimeReal = System.currentTimeMillis();
                 startTimeSim = clock.getCurrentTime();
                 computationTime = 0;
-
             } else if (e.getEventType() == ClockEventType.STOPPED) {
                 computationTime = System.currentTimeMillis() - startTimeReal;
                 simulationTime = clock.getCurrentTime() - startTimeSim;
@@ -224,78 +188,36 @@ public final class StatsTracker extends AbstractModelVoid implements StatisticsP
                 final MoveEvent me = (MoveEvent) e;
                 increment((MovingRoadUser) me.roadUser, me.pathProgress.distance().getValue());
                 totalDistance += me.pathProgress.distance().getValue();
-                // if we are closer than 10 cm to the depot, we say we are 'at'
-                // the depot
-                if (Point.distance(me.roadModel.getPosition(me.roadUser),
-                        ((Vehicle) me.roadUser).getStartPosition()) < MOVE_THRESHOLD) {
-                    // only override time if the vehicle did actually move
-                    if (me.pathProgress.distance().getValue() > MOVE_THRESHOLD) {
-                        lastArrivalTimeAtDepot.put((MovingRoadUser) me.roadUser,
-                                clock.getCurrentTime());
-                        if (totalVehicles == lastArrivalTimeAtDepot.size()) {
-                            eventDispatcher.dispatchEvent(new Event(
-                                    StatisticsEventType.ALL_VEHICLES_AT_DEPOT, this));
-                        }
-                    }
-                } else {
-                    lastArrivalTimeAtDepot.remove(me.roadUser);
-                }
-
             } else if (e.getEventType() == PDPModelEventType.START_PICKUP) {
                 verify(e instanceof PDPModelEvent);
                 final PDPModelEvent pme = (PDPModelEvent) e;
-                final Parcel p = pme.parcel;
-                final Vehicle v = pme.vehicle;
-                assert p != null;
-                assert v != null;
+                final Parcel parcel = pme.parcel;
+                final Vehicle vehicle = pme.vehicle;
+                assert parcel != null;
+                assert vehicle != null;
 
-                final long latestBeginTime = p.getPickupTimeWindow().end()
-                        - p.getPickupDuration();
-                if (pme.time > latestBeginTime) {
-                    final long tardiness = pme.time - latestBeginTime;
-                    pickupTardiness += tardiness;
-                    eventDispatcher.dispatchEvent(new StatisticsEvent(
-                            StatisticsEventType.PICKUP_TARDINESS, this, p, v, tardiness,
-                            pme.time));
-                }
+                final long waitingTime = pme.time - parcel.getOrderAnnounceTime();
+                pickupWaitingTime += waitingTime;
             } else if (e.getEventType() == PDPModelEventType.END_PICKUP) {
                 totalPickups++;
             } else if (e.getEventType() == PDPModelEventType.START_DELIVERY) {
-                final PDPModelEvent pme = (PDPModelEvent) e;
-
-                final Parcel p = pme.parcel;
-                final Vehicle v = pme.vehicle;
-                assert p != null;
-                assert v != null;
-
-                final long latestBeginTime = p.getDeliveryTimeWindow().end()
-                        - p.getDeliveryDuration();
-                if (pme.time > latestBeginTime) {
-                    final long tardiness = pme.time - latestBeginTime;
-                    deliveryTardiness += tardiness;
-                    eventDispatcher.dispatchEvent(new StatisticsEvent(
-                            StatisticsEventType.DELIVERY_TARDINESS, this, p, v, tardiness,
-                            pme.time));
-                }
+                // do nothing, delivery has only started
             } else if (e.getEventType() == PDPModelEventType.END_DELIVERY) {
+                final PDPModelEvent pme = (PDPModelEvent) e;
+                assert pme.parcel instanceof Customer;
+                final Customer customer = (Customer) pme.parcel;
+                final Vehicle vehicle = pme.vehicle;
+                assert customer != null;
+                assert vehicle != null;
+
+                // TODO: juiste formule?
+                travelSpeed += Point.distance(customer.getPickupLocation(), customer.getDeliveryLocation()) / (pme.time - customer.getPickupTime());
                 totalDeliveries++;
-            } else if (e.getEventType() == SCENARIO_EVENT) {
-                final ScenarioEvent se = (ScenarioEvent) e;
-                if (se.getTimedEvent() instanceof AddParcelEvent) {
-                    totalParcels++;
-                } else if (se.getTimedEvent() instanceof AddVehicleEvent) {
-                    totalVehicles++;
-                } else if (se.getTimedEvent() instanceof TimeOutEvent) {
-                    simFinish = true;
-                    scenarioEndTime = se.getTimedEvent().getTime();
-                }
             } else if (e.getEventType() == NEW_PARCEL) {
                 // pdp model event
                 acceptedParcels++;
             } else if (e.getEventType() == NEW_VEHICLE) {
-                verify(e instanceof PDPModelEvent);
-                final PDPModelEvent ev = (PDPModelEvent) e;
-                lastArrivalTimeAtDepot.put(ev.vehicle, clock.getCurrentTime());
+                totalVehicles++;
             } else {
                 // currently not handling fall throughs
             }

@@ -1,5 +1,5 @@
 
-package core;
+package core.statistics;
 
 import javax.annotation.Generated;
 

@@ -116,6 +116,7 @@ public class Taxi extends Vehicle implements CommUser {
                 if (rm.equalPosition(this, currentCustomer.get())) {
                     // pickup customer
                     pm.pickup(this, currentCustomer.get(), time);
+                    currentCustomer.get().setPickupTime(time.getTime());
                     setState(TaxiState.HAS_CUSTOMER);
                 }
             }

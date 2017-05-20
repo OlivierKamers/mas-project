@@ -25,6 +25,7 @@ import com.github.rinde.rinsim.event.Listener;
 import com.github.rinde.rinsim.ui.View;
 import com.github.rinde.rinsim.ui.renderers.PlaneRoadModelRenderer;
 import com.github.rinde.rinsim.ui.renderers.RoadUserRenderer;
+import core.statistics.StatsTracker;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Monitor;
@@ -139,7 +140,7 @@ public final class MasProject {
                     for (HistoricalData h : data) {
                         float chance = r.nextFloat();
                         if (chance <= CUSTOMER_SAMPLE) {
-                            simulator.register(new Customer(h));
+                            simulator.register(new Customer(h, time));
 
                             // For debugging: print the data
 //                            System.out.println(h.toString());
