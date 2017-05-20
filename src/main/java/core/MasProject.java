@@ -100,6 +100,7 @@ public final class MasProject {
                 .addModel(CommModel.builder())
                 .addModel(DefaultPDPModel.builder())
                 .addModel(view)
+                .addModel(StatsTracker.builder())
                 .setTimeUnit(SI.MILLI(SI.SECOND))
                 .setTickLength(1000L)
                 .build();
