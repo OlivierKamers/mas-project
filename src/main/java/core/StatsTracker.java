@@ -15,23 +15,6 @@
  */
 package core;
 
-import static com.github.rinde.rinsim.core.model.pdp.PDPModel.PDPModelEventType.END_DELIVERY;
-import static com.github.rinde.rinsim.core.model.pdp.PDPModel.PDPModelEventType.END_PICKUP;
-import static com.github.rinde.rinsim.core.model.pdp.PDPModel.PDPModelEventType.NEW_PARCEL;
-import static com.github.rinde.rinsim.core.model.pdp.PDPModel.PDPModelEventType.NEW_VEHICLE;
-import static com.github.rinde.rinsim.core.model.pdp.PDPModel.PDPModelEventType.START_DELIVERY;
-import static com.github.rinde.rinsim.core.model.pdp.PDPModel.PDPModelEventType.START_PICKUP;
-import static com.github.rinde.rinsim.core.model.road.GenericRoadModel.RoadEventType.MOVE;
-import static com.github.rinde.rinsim.core.model.time.Clock.ClockEventType.STARTED;
-import static com.github.rinde.rinsim.core.model.time.Clock.ClockEventType.STOPPED;
-import static com.github.rinde.rinsim.scenario.ScenarioController.EventType.SCENARIO_EVENT;
-import static com.github.rinde.rinsim.scenario.ScenarioController.EventType.SCENARIO_FINISHED;
-import static com.github.rinde.rinsim.scenario.ScenarioController.EventType.SCENARIO_STARTED;
-import static com.google.common.base.Verify.verify;
-import static com.google.common.collect.Maps.newLinkedHashMap;
-
-import java.util.Map;
-
 import com.github.rinde.rinsim.core.model.DependencyProvider;
 import com.github.rinde.rinsim.core.model.Model.AbstractModelVoid;
 import com.github.rinde.rinsim.core.model.ModelBuilder.AbstractModelBuilder;
@@ -55,23 +38,28 @@ import com.github.rinde.rinsim.pdptw.common.AddParcelEvent;
 import com.github.rinde.rinsim.pdptw.common.AddVehicleEvent;
 import com.github.rinde.rinsim.pdptw.common.StatisticsDTO;
 import com.github.rinde.rinsim.pdptw.common.StatisticsProvider;
-import com.github.rinde.rinsim.scenario.ScenarioController;
 import com.github.rinde.rinsim.scenario.ScenarioController.ScenarioEvent;
 import com.github.rinde.rinsim.scenario.TimeOutEvent;
 import com.google.auto.value.AutoValue;
 
+import java.util.Map;
 
-public final class StatsTracker extends AbstractModelVoid implements        StatisticsProvider {
-    final EventDispatcher eventDispatcher;
-    final TheListener theListener;
-    final Clock clock;
-    final RoadModel roadModel;
+import static com.github.rinde.rinsim.core.model.pdp.PDPModel.PDPModelEventType.*;
+import static com.github.rinde.rinsim.core.model.road.GenericRoadModel.RoadEventType.MOVE;
+import static com.github.rinde.rinsim.core.model.time.Clock.ClockEventType.STARTED;
+import static com.github.rinde.rinsim.core.model.time.Clock.ClockEventType.STOPPED;
+import static com.github.rinde.rinsim.scenario.ScenarioController.EventType.SCENARIO_EVENT;
+import static com.google.common.base.Verify.verify;
+import static com.google.common.collect.Maps.newLinkedHashMap;
 
-    enum StatisticsEventType {
-        PICKUP_TARDINESS, DELIVERY_TARDINESS, ALL_VEHICLES_AT_DEPOT;
-    }
 
-    StatsTracker(Clock c, RoadModel rm,                 PDPModel pm) {
+public final class StatsTracker extends AbstractModelVoid implements StatisticsProvider {
+    private final EventDispatcher eventDispatcher;
+    private final TheListener theListener;
+    private final Clock clock;
+    private final RoadModel roadModel;
+
+    StatsTracker(Clock c, RoadModel rm, PDPModel pm) {
         clock = c;
         roadModel = rm;
 
@@ -83,6 +71,13 @@ public final class StatsTracker extends AbstractModelVoid implements        Stat
         pm.getEventAPI()
                 .addListener(theListener, START_PICKUP, END_PICKUP, START_DELIVERY,
                         END_DELIVERY, NEW_PARCEL, NEW_VEHICLE);
+    }
+
+    /**
+     * @return A new {@link Builder} instance.
+     */
+    public static Builder builder() {
+        return new AutoValue_StatsTracker_Builder();
     }
 
     EventAPI getEventAPI() {
@@ -109,7 +104,8 @@ public final class StatsTracker extends AbstractModelVoid implements        Stat
             compTime = System.currentTimeMillis() - theListener.startTimeReal;
         }
 
-        return new StatisticsDTO(theListener.totalDistance,
+        return new StatisticsDTO(
+                theListener.totalDistance,
                 theListener.totalPickups, theListener.totalDeliveries,
                 theListener.totalParcels, theListener.acceptedParcels,
                 theListener.pickupTardiness, theListener.deliveryTardiness, compTime,
@@ -124,39 +120,77 @@ public final class StatsTracker extends AbstractModelVoid implements        Stat
         return clazz.cast(this);
     }
 
+    enum StatisticsEventType {
+        PICKUP_TARDINESS, DELIVERY_TARDINESS, ALL_VEHICLES_AT_DEPOT;
+    }
+
+    static class StatisticsEvent extends Event {
+        final Parcel parcel;
+        final Vehicle vehicle;
+        final long tardiness;
+        final long time;
+
+        StatisticsEvent(Enum<?> type, Object pIssuer, Parcel p, Vehicle v,
+                        long tar, long tim) {
+            super(type, pIssuer);
+            parcel = p;
+            vehicle = v;
+            tardiness = tar;
+            time = tim;
+        }
+    }
+
     /**
-     * @return A new {@link Builder} instance.
+     * Builder for creating {@link StatsTracker} instance.
+     *
+     * @author Rinde van Lon
      */
-    public static Builder builder() {
-        return new AutoValue_StatsTracker_Builder();
+    @AutoValue
+    public abstract static class Builder
+            extends AbstractModelBuilder<StatsTracker, Object> {
+        private static final long serialVersionUID = -4339759920383479477L;
+
+        Builder() {
+            setDependencies(
+                    Clock.class,
+                    RoadModel.class,
+                    PDPModel.class);
+            setProvidingTypes(StatisticsProvider.class);
+        }
+
+        @Override
+        public StatsTracker build(DependencyProvider dependencyProvider) {
+            final Clock clck = dependencyProvider.get(Clock.class);
+            final RoadModel rm = dependencyProvider.get(RoadModel.class);
+            final PDPModel pm = dependencyProvider.get(PDPModel.class);
+            return new StatsTracker(clck, rm, pm);
+        }
     }
 
     class TheListener implements Listener {
 
         private static final double MOVE_THRESHOLD = 0.0001;
+        final Map<MovingRoadUser, Double> distanceMap;
+        final Map<MovingRoadUser, Long> lastArrivalTimeAtDepot;
         // parcels
-        protected int totalParcels;
-        protected int acceptedParcels;
-
+        int totalParcels;
+        int acceptedParcels;
         // vehicles
-        protected int totalVehicles;
-        protected final Map<MovingRoadUser, Double> distanceMap;
-        protected double totalDistance;
-        protected final Map<MovingRoadUser, Long> lastArrivalTimeAtDepot;
-
-        protected int totalPickups;
-        protected int totalDeliveries;
-        protected long pickupTardiness;
-        protected long deliveryTardiness;
+        int totalVehicles;
+        double totalDistance;
+        int totalPickups;
+        int totalDeliveries;
+        long pickupTardiness;
+        long deliveryTardiness;
 
         // simulation
-        protected long startTimeReal;
-        protected long startTimeSim;
-        protected long computationTime;
-        protected long simulationTime;
+        long startTimeReal;
+        long startTimeSim;
+        long computationTime;
+        long simulationTime;
 
-        protected boolean simFinish;
-        protected long scenarioEndTime;
+        boolean simFinish;
+        long scenarioEndTime;
 
         TheListener() {
             totalParcels = 0;
@@ -188,17 +222,14 @@ public final class StatsTracker extends AbstractModelVoid implements        Stat
             } else if (e.getEventType() == RoadEventType.MOVE) {
                 verify(e instanceof MoveEvent);
                 final MoveEvent me = (MoveEvent) e;
-                increment((MovingRoadUser) me.roadUser, me.pathProgress.distance()
-                        .getValue()
-                        .doubleValue());
-                totalDistance += me.pathProgress.distance().getValue().doubleValue();
+                increment((MovingRoadUser) me.roadUser, me.pathProgress.distance().getValue());
+                totalDistance += me.pathProgress.distance().getValue();
                 // if we are closer than 10 cm to the depot, we say we are 'at'
                 // the depot
                 if (Point.distance(me.roadModel.getPosition(me.roadUser),
                         ((Vehicle) me.roadUser).getStartPosition()) < MOVE_THRESHOLD) {
                     // only override time if the vehicle did actually move
-                    if (me.pathProgress.distance().getValue()
-                            .doubleValue() > MOVE_THRESHOLD) {
+                    if (me.pathProgress.distance().getValue() > MOVE_THRESHOLD) {
                         lastArrivalTimeAtDepot.put((MovingRoadUser) me.roadUser,
                                 clock.getCurrentTime());
                         if (totalVehicles == lastArrivalTimeAtDepot.size()) {
@@ -271,54 +302,12 @@ public final class StatsTracker extends AbstractModelVoid implements        Stat
 
         }
 
-        protected void increment(MovingRoadUser mru, double num) {
+        void increment(MovingRoadUser mru, double num) {
             if (!distanceMap.containsKey(mru)) {
                 distanceMap.put(mru, num);
             } else {
                 distanceMap.put(mru, distanceMap.get(mru) + num);
             }
-        }
-    }
-
-    static class StatisticsEvent extends Event {
-        final Parcel parcel;
-        final Vehicle vehicle;
-        final long tardiness;
-        final long time;
-
-        StatisticsEvent(Enum<?> type, Object pIssuer, Parcel p, Vehicle v,
-                        long tar, long tim) {
-            super(type, pIssuer);
-            parcel = p;
-            vehicle = v;
-            tardiness = tar;
-            time = tim;
-        }
-    }
-
-    /**
-     * Builder for creating {@link StatsTracker} instance.
-     * @author Rinde van Lon
-     */
-    @AutoValue
-    public abstract static class Builder
-            extends AbstractModelBuilder<StatsTracker, Object> {
-        private static final long serialVersionUID = -4339759920383479477L;
-
-        Builder() {
-            setDependencies(ScenarioController.class,
-                    Clock.class,
-                    RoadModel.class,
-                    PDPModel.class);
-            setProvidingTypes(StatisticsProvider.class);
-        }
-
-        @Override
-        public StatsTracker build(DependencyProvider dependencyProvider) {
-            final Clock clck = dependencyProvider.get(Clock.class);
-            final RoadModel rm = dependencyProvider.get(RoadModel.class);
-            final PDPModel pm = dependencyProvider.get(PDPModel.class);
-            return new StatsTracker(clck, rm, pm);
         }
     }
 }

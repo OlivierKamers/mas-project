@@ -159,6 +159,10 @@ public final class MasProject {
 
         simulator.start();
 
+        // simulation is done, lets print the statistics!
+        System.out.println(simulator.getModelProvider().getModel(StatsTracker.class).getStatistics());
+
+
         return simulator;
     }
 
