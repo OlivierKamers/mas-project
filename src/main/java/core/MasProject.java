@@ -42,9 +42,9 @@ import java.util.Random;
  */
 public final class MasProject {
     private static final double MAX_SPEED = 50;
-    private static final int NUM_TAXIS = 1;
-    private static final int TAXI_CAPACITY = 10;
-    private static final int SPEED_UP = 3;
+    private static final int NUM_TAXIS = 200;
+    private static final int TAXI_CAPACITY = 6;
+    private static final int SPEED_UP = 5;
     private static final long TEST_STOP_TIME = 20 * 60 * 1000;
     private static final int TEST_SPEED_UP = 1;
     private static final double CUSTOMER_SAMPLE = 0.2;
@@ -110,10 +110,23 @@ public final class MasProject {
 
         final RoadModel roadModel = simulator.getModelProvider().getModel(RoadModel.class);
 
+        // Register random Taxis
         for (int i = 0; i < NUM_TAXIS; i++) {
             simulator.register(new Taxi(i, roadModel.getRandomPosition(rng), TAXI_CAPACITY, discreteField));
         }
+
+        // For debugging: Register a Taxi at (1,1)
+//        simulator.register(new Taxi(0, new Point(1, 1), TAXI_CAPACITY, discreteField));
+
         MySQLDataLoader dataLoader = new MySQLDataLoader();
+
+//        List<HistoricalData> data = dataLoader.read(
+//                Helper.START_TIME,
+//                Helper.START_TIME.plusNanos(1000 * 1000000)
+//        );
+//        simulator.register(new Customer(data.get(2)));
+//        simulator.register(new Customer(data.get(3)));
+//        simulator.register(new Customer(data.get(4)));
 
         simulator.addTickListener(new TickListener() {
             @Override

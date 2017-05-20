@@ -179,7 +179,7 @@ public class DiscreteField {
 
     private Vector2D updateVectorWithPB(Point taxiPosition, Vector2D vector, PositionBroadcast pb) {
         Vector2D diff = new Vector2D(pb.getPosition().x - taxiPosition.x, pb.getPosition().y - taxiPosition.y);
-        return vector.add(-1.0 * CAPACITY_WEIGHT * pb.getFreeCapacity() * (1 - Point.distance(taxiPosition, pb.getPosition()) / (2 * Taxi.MAX_RANGE)), diff);
+        return vector.add(-1.0 * CAPACITY_WEIGHT * pb.getFreeCapacity() * (1 - Math.min(1, Point.distance(taxiPosition, pb.getPosition()) / Taxi.FIELD_INFLUENCE_RANGE)), diff);
     }
 
     private Vector2D updateVectorWithField(Point taxiPosition, Vector2D vector, Point fieldPoint, double fieldValue) {

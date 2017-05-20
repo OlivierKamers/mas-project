@@ -40,14 +40,17 @@ import java.util.Comparator;
  * @author Rinde van Lon
  */
 public class Taxi extends Vehicle implements CommUser {
-    public static final double MAX_RANGE = Double.MAX_VALUE;// 0.5;
+    public static final double COMMUNICATION_RANGE = 1;
+    public static final double FIELD_INFLUENCE_RANGE = 0.5;
 
     private static final double SPEED = 1000d;
     private static final int FIELD_RANGE = 5;
     private static final double FIELD_VECTOR_FACTOR = 0.5;
+    private static final int MAX_CONCURRENT_PICKUPS = 3;
     private final int id;
     private Vector2D fieldVector;
     private ArrayList<Customer> currentCustomers;
+    private ArrayList<Point> route;
     private Optional<CommDevice> commDevice;
     private TaxiState state;
     private DiscreteField df;
@@ -59,6 +62,7 @@ public class Taxi extends Vehicle implements CommUser {
                 .speed(SPEED)
                 .build());
         this.currentCustomers = new ArrayList<>();
+        this.route = new ArrayList<>();
         this.id = id;
         this.df = df;
         this.fieldVector = new Vector2D(0, 0);
@@ -99,33 +103,30 @@ public class Taxi extends Vehicle implements CommUser {
 //                    rm.getPosition(this), rm, Parcel.class));
         }
 
-        // Taxi with a goal
-        if (!currentCustomers.isEmpty()) {
-            Customer currentCustomer = currentCustomers.get(0);
-            final boolean inCargo = pm.containerContains(this, currentCustomer);
-            // sanity check: if it is not in our cargo AND it is also not on the
-            // RoadModel, we cannot go to curr anymore.
-            if (!inCargo && !rm.containsObject(currentCustomer)) {
-                currentCustomers.remove(currentCustomer);
-                if (currentCustomers.isEmpty())
+        // Taxi has not finished its route yet
+        if (!route.isEmpty()) {
+            Point target = route.get(0);
+            rm.moveTo(this, target, time);
+            if (rm.getPosition(this).equals(target)) {
+                // We have reached our next target.
+                // If there are customers to be dropped off here, drop them
+                currentCustomers.stream()
+                        .filter(c -> c.getDeliveryLocation().equals(rm.getPosition(this)))
+                        .filter(c -> pm.containerContains(this, c))
+                        .forEach(c -> pm.deliver(this, c, time));
+                currentCustomers.removeIf(c -> c.getDeliveryLocation().equals(rm.getPosition(this)));
+                // If there are customers to be picked up here, pick them up
+                currentCustomers.stream()
+                        .filter(c -> c.getPickupLocation().equals(rm.getPosition(this)))
+                        .filter(c -> !pm.containerContains(this, c) && rm.containsObject(c))
+                        .forEach(c -> pm.pickup(this, c, time));
+                route.remove(0);
+                if (route.isEmpty()) {
                     setState(TaxiState.IDLE);
-            } else if (inCargo) {
-                // if it is in cargo, go to its destination
-                rm.moveTo(this, currentCustomer.getDeliveryLocation(), time);
-                if (rm.getPosition(this).equals(currentCustomer.getDeliveryLocation())) {
-                    // deliver when we arrive
-                    pm.deliver(this, currentCustomer, time);
-                }
-            } else {
-                // it is still available, go there as fast as possible
-                rm.moveTo(this, currentCustomer, time);
-                if (rm.equalPosition(this, currentCustomer)) {
-                    // pickup customer
-                    pm.pickup(this, currentCustomer, time);
-                    currentCustomer.setPickupTime(time.getTime());
                 }
             }
-        } else if (getState() == TaxiState.IDLE) {
+        }
+        if (getState() == TaxiState.IDLE) {
             // Idle
             fieldVector = df.getNextPosition(this, time.getStartTime(), messages, FIELD_RANGE).add(FIELD_VECTOR_FACTOR, fieldVector);
             Point targetPoint = new Point(
@@ -149,6 +150,9 @@ public class Taxi extends Vehicle implements CommUser {
     }
 
     private double getFreeCapacity() {
+        if (currentCustomers.size() >= MAX_CONCURRENT_PICKUPS) {
+            return 0;
+        }
         return getCapacity() - currentCustomers.stream().mapToDouble(Parcel::getNeededCapacity).sum();
     }
 
@@ -209,11 +213,54 @@ public class Taxi extends Vehicle implements CommUser {
         ContractAccept accept = new ContractAccept(this);
         commDevice.get().send(accept, customer);
         currentCustomers.add(customer);
-        sortCustomers();
+        sortRoute();
         setState(TaxiState.BUSY);
     }
 
-    private void sortCustomers() {
+    private void sortRoute() {
+        if (!currentCustomers.isEmpty()) {
+            ArrayList<ArrayList<Point>> allPerms = generatePerm(new ArrayList<>(currentCustomers));
+            route = allPerms.stream().sorted(Comparator.comparingDouble(this::routeLength)).findFirst().get();
+        }
+
+    }
+
+    private ArrayList<ArrayList<Point>> generatePerm(ArrayList<Customer> original) {
+        if (original.size() == 0) {
+            ArrayList<ArrayList<Point>> result = new ArrayList<>();
+            result.add(new ArrayList<>());
+            return result;
+        }
+        Customer firstElement = original.remove(0);
+        Point firstPickup = firstElement.getPickupLocation();
+        Point firstDelivery = firstElement.getDeliveryLocation();
+        ArrayList<ArrayList<Point>> returnValue = new ArrayList<>();
+        // Recursive case
+        ArrayList<ArrayList<Point>> permutations = generatePerm(original);
+        // Insert pickup and delivery for this customer in all possible positions (pickup before delivery) for all other permutations
+        for (ArrayList<Point> smallerPermuted : permutations) {
+            for (int pickupIndex = 0; pickupIndex <= smallerPermuted.size(); pickupIndex++) {
+                for (int deliveryIndex = pickupIndex + 1; deliveryIndex <= smallerPermuted.size() + 1; deliveryIndex++) {
+                    ArrayList<Point> temp = new ArrayList<>(smallerPermuted);
+                    temp.add(pickupIndex, firstPickup);
+                    temp.add(deliveryIndex, firstDelivery);
+                    returnValue.add(temp);
+                }
+            }
+        }
+        return returnValue;
+    }
+
+    private double routeLength(ArrayList<Point> route) {
+        if (route.isEmpty())
+            return 0;
+        double distance = Point.distance(getPosition().get(), route.get(0));
+        if (route.size() == 1)
+            return distance;
+        for (int i = 1; i < route.size(); i++) {
+            distance += Point.distance(route.get(i), route.get(i - 1));
+        }
+        return distance;
     }
 
     @Override
@@ -225,7 +272,7 @@ public class Taxi extends Vehicle implements CommUser {
     public void setCommDevice(CommDeviceBuilder builder) {
         commDevice = Optional.of(builder
                 .setReliability(1)
-                .setMaxRange(MAX_RANGE)
+                .setMaxRange(COMMUNICATION_RANGE)
                 .build()
         );
     }

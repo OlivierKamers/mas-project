@@ -58,6 +58,19 @@ public class Customer extends Parcel implements CommUser, TickListener {
                 .buildDTO());
     }
 
+    Customer(HistoricalData data) {
+        this(data.getId(), Parcel.builder(
+                data.getPickupPoint(),
+                data.getDropoffPoint()
+        )
+                .orderAnnounceTime(0)
+                // TODO: window bepalen
+                .pickupTimeWindow(TimeWindow.create(0, 1000000))
+                .neededCapacity(data.getPassengerCount())
+                .serviceDuration(SERVICE_DURATION)
+                .buildDTO());
+    }
+
     public long getId() {
         return id;
     }
