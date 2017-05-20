@@ -19,6 +19,7 @@ import com.github.rinde.rinsim.core.model.comm.CommDeviceBuilder;
 import com.github.rinde.rinsim.core.model.comm.CommUser;
 import com.github.rinde.rinsim.core.model.comm.Message;
 import com.github.rinde.rinsim.core.model.pdp.PDPModel;
+import com.github.rinde.rinsim.core.model.pdp.Parcel;
 import com.github.rinde.rinsim.core.model.pdp.Vehicle;
 import com.github.rinde.rinsim.core.model.pdp.VehicleDTO;
 import com.github.rinde.rinsim.core.model.road.RoadModel;
@@ -29,6 +30,7 @@ import com.google.common.collect.ImmutableList;
 import core.messages.*;
 import org.apache.commons.math3.geometry.euclidean.twod.Vector2D;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 
 /**
@@ -38,14 +40,14 @@ import java.util.Comparator;
  * @author Rinde van Lon
  */
 public class Taxi extends Vehicle implements CommUser {
-    public static final double MAX_RANGE = 0.5;
+    public static final double MAX_RANGE = Double.MAX_VALUE;// 0.5;
 
     private static final double SPEED = 1000d;
     private static final int FIELD_RANGE = 5;
     private static final double FIELD_VECTOR_FACTOR = 0.5;
     private final int id;
     private Vector2D fieldVector;
-    private Optional<Customer> currentCustomer;
+    private ArrayList<Customer> currentCustomers;
     private Optional<CommDevice> commDevice;
     private TaxiState state;
     private DiscreteField df;
@@ -56,7 +58,7 @@ public class Taxi extends Vehicle implements CommUser {
                 .startPosition(startPosition)
                 .speed(SPEED)
                 .build());
-        this.currentCustomer = Optional.absent();
+        this.currentCustomers = new ArrayList<>();
         this.id = id;
         this.df = df;
         this.fieldVector = new Vector2D(0, 0);
@@ -98,28 +100,29 @@ public class Taxi extends Vehicle implements CommUser {
         }
 
         // Taxi with a goal
-        if (currentCustomer.isPresent()) {
-            final boolean inCargo = pm.containerContains(this, currentCustomer.get());
+        if (!currentCustomers.isEmpty()) {
+            Customer currentCustomer = currentCustomers.get(0);
+            final boolean inCargo = pm.containerContains(this, currentCustomer);
             // sanity check: if it is not in our cargo AND it is also not on the
             // RoadModel, we cannot go to curr anymore.
-            if (!inCargo && !rm.containsObject(currentCustomer.get())) {
-                currentCustomer = Optional.absent();
-                setState(TaxiState.IDLE);
+            if (!inCargo && !rm.containsObject(currentCustomer)) {
+                currentCustomers.remove(currentCustomer);
+                if (currentCustomers.isEmpty())
+                    setState(TaxiState.IDLE);
             } else if (inCargo) {
                 // if it is in cargo, go to its destination
-                rm.moveTo(this, currentCustomer.get().getDeliveryLocation(), time);
-                if (rm.getPosition(this).equals(currentCustomer.get().getDeliveryLocation())) {
+                rm.moveTo(this, currentCustomer.getDeliveryLocation(), time);
+                if (rm.getPosition(this).equals(currentCustomer.getDeliveryLocation())) {
                     // deliver when we arrive
-                    pm.deliver(this, currentCustomer.get(), time);
+                    pm.deliver(this, currentCustomer, time);
                 }
             } else {
                 // it is still available, go there as fast as possible
-                rm.moveTo(this, currentCustomer.get(), time);
-                if (rm.equalPosition(this, currentCustomer.get())) {
+                rm.moveTo(this, currentCustomer, time);
+                if (rm.equalPosition(this, currentCustomer)) {
                     // pickup customer
-                    pm.pickup(this, currentCustomer.get(), time);
-                    currentCustomer.get().setPickupTime(time.getTime());
-                    setState(TaxiState.HAS_CUSTOMER);
+                    pm.pickup(this, currentCustomer, time);
+                    currentCustomer.setPickupTime(time.getTime());
                 }
             }
         } else if (getState() == TaxiState.IDLE) {
@@ -142,28 +145,14 @@ public class Taxi extends Vehicle implements CommUser {
      * Check whether this Taxi can pickup more customers.
      */
     private boolean shouldHandleContractNet() {
-//        return getFreeCapacity() > 0;
-        return !currentCustomer.isPresent();
+        return getFreeCapacity() > 0;
     }
 
     private double getFreeCapacity() {
-//        return getCapacity() - getPDPModel().getContentsSize(this);
-        return getState() == TaxiState.IDLE ? 1 : 0;
+        return getCapacity() - currentCustomers.stream().mapToDouble(Parcel::getNeededCapacity).sum();
     }
 
     private void handleContractNet(ImmutableList<Message> messages) {
-        if (getState() == TaxiState.IDLE) {
-            handleIdle(messages);
-        }
-    }
-
-    /**
-     * This method will accept the best deal it received
-     * or send a ContractBid to every customer that sent a ContractRequest if no deal was received.
-     *
-     * @param messages All unread messages for this taxi.
-     */
-    private void handleIdle(ImmutableList<Message> messages) {
         handleDeals(messages);
         handleBids(messages);
     }
@@ -219,8 +208,12 @@ public class Taxi extends Vehicle implements CommUser {
         Customer customer = deal.getCustomer();
         ContractAccept accept = new ContractAccept(this);
         commDevice.get().send(accept, customer);
-        currentCustomer = Optional.of(customer);
-        setState(TaxiState.ACCEPTED);
+        currentCustomers.add(customer);
+        sortCustomers();
+        setState(TaxiState.BUSY);
+    }
+
+    private void sortCustomers() {
     }
 
     @Override
@@ -243,14 +236,17 @@ public class Taxi extends Vehicle implements CommUser {
                 .append("T")
                 .append(getId())
                 .append("{")
-                .append(getState());
-        if (currentCustomer.isPresent())
-            sb.append(" ").append(currentCustomer.get().getId());
+                .append(getState())
+                .append(" ")
+                .append((int) getFreeCapacity())
+                .append("/")
+                .append((int) getCapacity());
+        currentCustomers.stream().map(Customer::getId).forEach(id -> sb.append(" ").append(id));
         sb.append("}");
         return sb.toString();
     }
 
     enum TaxiState {
-        IDLE, ACCEPTED, HAS_CUSTOMER
+        IDLE, BUSY
     }
 }
