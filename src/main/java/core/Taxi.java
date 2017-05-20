@@ -37,8 +37,9 @@ import java.util.Comparator;
  * @author Rinde van Lon
  */
 public class Taxi extends Vehicle implements CommUser {
+    public static final double MAX_RANGE = 0.5;
+
     private static final double SPEED = 1000d;
-    private static final double MAX_RANGE = Double.MAX_VALUE;
     private static final int FIELD_RANGE = 5;
 
 
@@ -121,7 +122,11 @@ public class Taxi extends Vehicle implements CommUser {
         } else if (getState() == TaxiState.IDLE) {
             // Idle
             Point fieldPoint = df.getNextPosition(this, time.getStartTime(), messages, FIELD_RANGE);
-            rm.moveTo(this, fieldPoint, time);
+            Point targetPoint = new Point(
+                    Math.max(0, Math.min(rm.getBounds().get(1).x, fieldPoint.x)),
+                    Math.max(0, Math.min(rm.getBounds().get(1).y, fieldPoint.y))
+            );
+            rm.moveTo(this, targetPoint, time);
         }
         sendPositionMessage();
     }

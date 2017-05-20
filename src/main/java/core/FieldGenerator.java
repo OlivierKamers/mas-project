@@ -11,6 +11,7 @@ public class FieldGenerator {
     //    private static final int TIME_STEP = 100;
     private static double FIELD_INFLUENCE = 0.5;
     private double[][][] field;
+    private double[] maxFieldValues;
     private int xDim;
     private int yDim;
 
@@ -18,6 +19,7 @@ public class FieldGenerator {
         this.xDim = (int) (MATRIX_STEP * Helper.getXScale());
         this.yDim = (int) (MATRIX_STEP * Helper.getYScale());
         this.field = new double[TIME_STEP][this.xDim][this.yDim];
+        this.maxFieldValues = new double[TIME_STEP];
     }
 
     public static void main(String[] args) {
@@ -34,8 +36,9 @@ public class FieldGenerator {
             curTime = curTime.plus(timeDuration);
         }
         smooth();
-        normalize();
-        return new DiscreteField(this.field, timeDuration);
+        findMaxValues();
+//        normalize();
+        return new DiscreteField(this.field, this.maxFieldValues, timeDuration);
     }
 
     private double[][] parseData(List<HistoricalData> data) {
@@ -63,7 +66,7 @@ public class FieldGenerator {
         }
     }
 
-    private void normalize() {
+    private void findMaxValues() {
         for (int t = 0; t < this.field.length; t++) {
             // Find max
             double max = 0;
@@ -74,8 +77,14 @@ public class FieldGenerator {
                     }
                 }
             }
+            maxFieldValues[t] = max;
+        }
+    }
 
+    private void normalize() {
+        for (int t = 0; t < this.field.length; t++) {
             //Normalize
+            double max = maxFieldValues[t];
             if (max > 0) {
                 for (int x = 0; x < xDim; x++) {
                     for (int y = 0; y < yDim; y++) {

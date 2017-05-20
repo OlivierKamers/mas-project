@@ -13,13 +13,15 @@ import java.util.stream.Collectors;
 
 public class DiscreteField {
     private double[][][] fieldData;
+    private double[] maxFieldValues;
     private int tDim;
     private int xDim;
     private int yDim;
     private Duration durationPerFrame;
 
-    public DiscreteField(double[][][] data, Duration durationPerFrame) {
+    public DiscreteField(double[][][] data, double[] maxFieldValues, Duration durationPerFrame) {
         this.fieldData = data;
+        this.maxFieldValues = maxFieldValues;
         this.tDim = fieldData.length;
         this.xDim = fieldData[0].length;
         this.yDim = fieldData[0][0].length;
@@ -28,6 +30,7 @@ public class DiscreteField {
 
     public DiscreteField() {
         this.fieldData = new double[0][0][0];
+        this.maxFieldValues = new double[0];
         this.tDim = 0;
         this.xDim = 0;
         this.yDim = 0;
@@ -69,9 +72,13 @@ public class DiscreteField {
         return this.fieldData[t][x][y];
     }
 
+    public double getMaxValue(int t) {
+        return this.maxFieldValues[t];
+    }
+
     public int[] convertMapToFieldCoordinates(Point p) {
-        int xBin = (int) Math.floor(p.x / Helper.ROADMODEL_BOUNDARIES_SCALE / Helper.getXScale() * xDim);
-        int yBin = (int) Math.floor(p.y / Helper.ROADMODEL_BOUNDARIES_SCALE / Helper.getYScale() * yDim);
+        int xBin = (int) Math.min(xDim - 1, Math.floor(p.x * xDim / (Helper.ROADMODEL_BOUNDARIES_SCALE * Helper.getXScale())));
+        int yBin = (int) Math.min(yDim - 1, Math.floor(p.y * yDim / (Helper.ROADMODEL_BOUNDARIES_SCALE * Helper.getYScale())));
         return new int[]{xBin, yBin};
     }
 
@@ -131,9 +138,7 @@ public class DiscreteField {
         int[] pos = convertMapToFieldCoordinates(taxi.getPosition().get());
         int xPos = pos[0];
         int yPos = pos[1];
-        double maxField = Double.MIN_VALUE;
         boolean nonZero = false;
-        Point maxPoint = taxi.getPosition().get();
         Point taxiPosition = taxi.getPosition().get();
 
         Vector2D vector = new Vector2D(taxiPosition.x, taxiPosition.y);
@@ -147,33 +152,37 @@ public class DiscreteField {
         }
 
 
-//        for (int offset = 0; offset < FieldGenerator.MATRIX_STEP; offset++) {
-//            List<int[]> positions = getLeftCoords(offset, xPos, yPos);
-//            positions.addAll(getRightCoords(offset, xPos, yPos));
-//            positions.addAll(getTopCoords(offset, xPos, yPos));
-//            positions.addAll(getBottomCoords(offset, xPos, yPos));
-//
-//            for (int[] p : positions) {
-//                double curVal = getValue(t, p[0], p[1]);
-//                if (curVal != 0) {
-//                    nonZero = true;
-//                }
-//                if (curVal > maxField) {
-//                    maxPoint = convertFieldToMapCoordinates(p[0], p[1]);
-//                    maxField = curVal;
-//                }
-//            }
-//
-//            if (nonZero && offset > range) {
-//                break;
-//            }
-//        }
+        for (int offset = 0; offset < FieldGenerator.MATRIX_STEP; offset++) {
+            List<int[]> positions = new ArrayList<>();
+            positions.addAll(getLeftCoords(offset, xPos, yPos));
+            positions.addAll(getRightCoords(offset, xPos, yPos));
+            positions.addAll(getTopCoords(offset, xPos, yPos));
+            positions.addAll(getBottomCoords(offset, xPos, yPos));
+
+            for (int[] p : positions) {
+                double fieldValue = getValue(t, p[0], p[1]);
+                if (fieldValue > 10e-3) {
+                    nonZero = true;
+                    Point fieldPoint = convertFieldToMapCoordinates(p[0], p[1]);
+                    vector = updateVectorWithField(taxiPosition, vector, fieldPoint, fieldValue);
+                }
+            }
+
+            if (nonZero && offset > range) {
+                break;
+            }
+        }
 
         return new Point(vector.getX(), vector.getY());
     }
 
     private Vector2D updateVectorWithPB(Point taxiPosition, Vector2D vector, PositionBroadcast pb) {
         Vector2D diff = new Vector2D(pb.getPosition().x - taxiPosition.x, pb.getPosition().y - taxiPosition.y);
-        return vector.add(-pb.getFreeCapacity() / Math.min(0.000000001, Point.distance(taxiPosition, pb.getPosition())), diff);
+        return vector.add(-pb.getFreeCapacity() * (1 - Point.distance(taxiPosition, pb.getPosition()) / (2 * Taxi.MAX_RANGE)), diff);
+    }
+
+    private Vector2D updateVectorWithField(Point taxiPosition, Vector2D vector, Point fieldPoint, double fieldValue) {
+        Vector2D diff = new Vector2D(fieldPoint.x - taxiPosition.x, fieldPoint.y - taxiPosition.y);
+        return vector.add(fieldValue / Point.distance(taxiPosition, fieldPoint), diff);
     }
 }

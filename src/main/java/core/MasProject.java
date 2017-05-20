@@ -174,6 +174,7 @@ public final class MasProject {
                 .with(DiscreteFieldRenderer.builder()
                         .withField(df)
                 )
+//                .with(CommRenderer.builder().withReliabilityColors())
                 .with(RoadUserRenderer.builder()
                         .withImageAssociation(
                                 Taxi.class, "/graphics/flat/taxi-32.png")

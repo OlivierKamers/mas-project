@@ -32,16 +32,14 @@ class DiscreteFieldRenderer extends AbstractCanvasRenderer {
     @Override
     public void renderDynamic(GC gc, ViewPort vp, long time) {
         int frameIndex = discreteField.getFrameIndexForTime(time);
-//        System.out.println(time);
-//        System.out.println(frameIndex);
         for (int x = 0; x < discreteField.getXDimension(); x++) {
             for (int y = 0; y < discreteField.getYDimension(); y++) {
-                gc.setBackground(new Color(gc.getDevice(), getRgb(this.discreteField.getValue(frameIndex, x, y))));
+                gc.setBackground(new Color(gc.getDevice(), getRgb(discreteField.getValue(frameIndex, x, y) / discreteField.getMaxValue(frameIndex))));
                 gc.fillRectangle(
                         vp.toCoordX(1.0 * x / this.discreteField.getXDimension() * Helper.ROADMODEL_BOUNDARIES_SCALE * Helper.getXScale()),
                         vp.toCoordY(1.0 * y / this.discreteField.getYDimension() * Helper.ROADMODEL_BOUNDARIES_SCALE * Helper.getYScale()),
-                        vp.scale(1.0 * Helper.ROADMODEL_BOUNDARIES_SCALE / this.discreteField.getXDimension()),
-                        vp.scale(1.0 * Helper.ROADMODEL_BOUNDARIES_SCALE) / this.discreteField.getYDimension()
+                        vp.scale(1.0 * Helper.ROADMODEL_BOUNDARIES_SCALE / discreteField.getXDimension()),
+                        vp.scale(1.0 * Helper.ROADMODEL_BOUNDARIES_SCALE) / discreteField.getYDimension()
                 );
             }
         }
