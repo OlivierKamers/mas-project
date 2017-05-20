@@ -124,7 +124,7 @@ public class Customer extends Parcel implements CommUser, TickListener {
         java.util.Optional<ContractBid> highestBid = messages.stream()
                 .filter(msg -> msg.getContents() instanceof ContractBid)
                 .map(msg -> (ContractBid) msg.getContents())
-                .sorted(Comparator.comparingDouble(ContractBid::getBid).reversed())
+                .sorted(Comparator.comparingDouble(ContractBid::getBid))
                 .findFirst();
 
         if (!highestBid.isPresent())

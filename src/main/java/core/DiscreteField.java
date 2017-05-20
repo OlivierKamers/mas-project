@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class DiscreteField {
+    private static double CAPACITY_WEIGHT = 0.3;
     private double[][][] fieldData;
     private double[] maxFieldValues;
     private int tDim;
@@ -133,7 +134,7 @@ public class DiscreteField {
         return res;
     }
 
-    public Point getNextPosition(Taxi taxi, long time, ImmutableList<Message> messages, int range) {
+    public Vector2D getNextPosition(Taxi taxi, long time, ImmutableList<Message> messages, int range) {
         int t = getFrameIndexForTime(time);
         int[] pos = convertMapToFieldCoordinates(taxi.getPosition().get());
         int xPos = pos[0];
@@ -141,16 +142,16 @@ public class DiscreteField {
         boolean nonZero = false;
         Point taxiPosition = taxi.getPosition().get();
 
-        Vector2D vector = new Vector2D(taxiPosition.x, taxiPosition.y);
+        Vector2D vector = new Vector2D(0, 0);
 
         List<PositionBroadcast> positionBroadcasts = messages.stream()
                 .filter(m -> m.getContents() instanceof PositionBroadcast)
-                .map(m -> (PositionBroadcast) m.getContents()).collect(Collectors.toList());
+                .map(m -> (PositionBroadcast) m.getContents())
+                .collect(Collectors.toList());
 
         for (PositionBroadcast pb : positionBroadcasts) {
             vector = updateVectorWithPB(taxiPosition, vector, pb);
         }
-
 
         for (int offset = 0; offset < FieldGenerator.MATRIX_STEP; offset++) {
             List<int[]> positions = new ArrayList<>();
@@ -173,12 +174,12 @@ public class DiscreteField {
             }
         }
 
-        return new Point(vector.getX(), vector.getY());
+        return vector;
     }
 
     private Vector2D updateVectorWithPB(Point taxiPosition, Vector2D vector, PositionBroadcast pb) {
         Vector2D diff = new Vector2D(pb.getPosition().x - taxiPosition.x, pb.getPosition().y - taxiPosition.y);
-        return vector.add(-pb.getFreeCapacity() * (1 - Point.distance(taxiPosition, pb.getPosition()) / (2 * Taxi.MAX_RANGE)), diff);
+        return vector.add(-1.0 * CAPACITY_WEIGHT * pb.getFreeCapacity() * (1 - Point.distance(taxiPosition, pb.getPosition()) / (2 * Taxi.MAX_RANGE)), diff);
     }
 
     private Vector2D updateVectorWithField(Point taxiPosition, Vector2D vector, Point fieldPoint, double fieldValue) {

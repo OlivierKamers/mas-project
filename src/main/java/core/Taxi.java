@@ -27,6 +27,7 @@ import com.github.rinde.rinsim.geom.Point;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import core.messages.*;
+import org.apache.commons.math3.geometry.euclidean.twod.Vector2D;
 
 import java.util.Comparator;
 
@@ -41,9 +42,9 @@ public class Taxi extends Vehicle implements CommUser {
 
     private static final double SPEED = 1000d;
     private static final int FIELD_RANGE = 5;
-
-
+    private static final double FIELD_VECTOR_FACTOR = 0.5;
     private final int id;
+    private Vector2D fieldVector;
     private Optional<Customer> currentCustomer;
     private Optional<CommDevice> commDevice;
     private TaxiState state;
@@ -58,6 +59,7 @@ public class Taxi extends Vehicle implements CommUser {
         this.currentCustomer = Optional.absent();
         this.id = id;
         this.df = df;
+        this.fieldVector = new Vector2D(0, 0);
         setState(TaxiState.IDLE);
     }
 
@@ -122,10 +124,10 @@ public class Taxi extends Vehicle implements CommUser {
             }
         } else if (getState() == TaxiState.IDLE) {
             // Idle
-            Point fieldPoint = df.getNextPosition(this, time.getStartTime(), messages, FIELD_RANGE);
+            fieldVector = df.getNextPosition(this, time.getStartTime(), messages, FIELD_RANGE).add(FIELD_VECTOR_FACTOR, fieldVector);
             Point targetPoint = new Point(
-                    Math.max(0, Math.min(rm.getBounds().get(1).x, fieldPoint.x)),
-                    Math.max(0, Math.min(rm.getBounds().get(1).y, fieldPoint.y))
+                    Math.max(0, Math.min(rm.getBounds().get(1).x, getPosition().get().x + fieldVector.getX())),
+                    Math.max(0, Math.min(rm.getBounds().get(1).y, getPosition().get().y + fieldVector.getY()))
             );
             rm.moveTo(this, targetPoint, time);
         }
@@ -145,7 +147,8 @@ public class Taxi extends Vehicle implements CommUser {
     }
 
     private double getFreeCapacity() {
-        return getCapacity() - getPDPModel().getContentsSize(this);
+//        return getCapacity() - getPDPModel().getContentsSize(this);
+        return getState() == TaxiState.IDLE ? 1 : 0;
     }
 
     private void handleContractNet(ImmutableList<Message> messages) {
@@ -203,7 +206,7 @@ public class Taxi extends Vehicle implements CommUser {
      */
     private double getBid(Customer customer) {
         if (getPosition().isPresent() && customer.getPosition().isPresent())
-            return 1.0 / Point.distance(getPosition().get(), customer.getPosition().get());
+            return Point.distance(getPosition().get(), customer.getPosition().get()) / getSpeed();
         return 0;
     }
 
