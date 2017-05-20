@@ -22,6 +22,7 @@ import com.github.rinde.rinsim.core.model.road.RoadModelBuilders;
 import com.github.rinde.rinsim.core.model.time.TickListener;
 import com.github.rinde.rinsim.core.model.time.TimeLapse;
 import com.github.rinde.rinsim.event.Listener;
+import com.github.rinde.rinsim.geom.Point;
 import com.github.rinde.rinsim.ui.View;
 import com.github.rinde.rinsim.ui.renderers.PlaneRoadModelRenderer;
 import com.github.rinde.rinsim.ui.renderers.RoadUserRenderer;
@@ -109,7 +110,7 @@ public final class MasProject {
         final RoadModel roadModel = simulator.getModelProvider().getModel(RoadModel.class);
 
         for (int i = 0; i < NUM_TAXIS; i++) {
-            simulator.register(new Taxi(i, roadModel.getRandomPosition(rng), TAXI_CAPACITY, discreteField));
+            simulator.register(new Taxi(i, new Point(1,1), TAXI_CAPACITY, discreteField));
         }
         MySQLDataLoader dataLoader = new MySQLDataLoader();
 

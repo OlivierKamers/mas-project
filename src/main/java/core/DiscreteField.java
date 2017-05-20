@@ -1,5 +1,6 @@
 package core;
 
+import com.github.rinde.rinsim.core.model.road.RoadModel;
 import com.github.rinde.rinsim.geom.Point;
 
 import java.time.Duration;
@@ -75,24 +76,83 @@ public class DiscreteField {
         return new Point(x, y);
     }
 
-    public Point getNextPosition(Taxi taxi, long time, int range) {
+    public Point getNextPosition(Taxi taxi, long time, RoadModel rm, int range) {
         int t = getFrameIndexForTime(time);
         int[] pos = convertMapToFieldCoordinates(taxi.getPosition().get());
         int xPos = pos[0];
         int yPos = pos[1];
 
         double maxField = Double.MIN_VALUE;
+        boolean nonZero = false;
         Point maxPoint = taxi.getPosition().get();
-        for (int x = Math.max(0, xPos - range); x <= Math.min(xPos + range, xDim - 1); x++) {
-            for (int y = Math.max(0, yPos - range); y <= Math.min(yPos + range, yDim - 1); y++) {
-                //TODO geen vierkant veld
-                double curVal = getValue(t, x, y);
-                if (curVal > maxField) {
-                    maxPoint = convertFieldToMapCoordinates(x, y);
-                    maxField = curVal;
+
+        int x, y;
+        for (int offset = 0; offset < FieldGenerator.MATRIX_STEP; offset++) {
+            // left
+            x = xPos - offset;
+            if (x >= 0) {
+                for (y = Math.max(0, yPos - offset); y <= Math.min(yPos + offset, yDim - 1); y++) {
+                    double curVal = getValue(t, x, y);
+                    if (curVal != 0) {
+                        nonZero = true;
+                    }
+                    if (curVal > maxField) {
+                        maxPoint = convertFieldToMapCoordinates(x, y);
+                        maxField = curVal;
+                    }
                 }
             }
+
+            // right
+            x = xPos + offset;
+            if (x < xDim) {
+                for (y = Math.max(0, yPos - offset); y <= Math.min(yPos + offset, yDim - 1); y++) {
+                    double curVal = getValue(t, x, y);
+                    if (curVal != 0) {
+                        nonZero = true;
+                    }
+                    if (curVal > maxField) {
+                        maxPoint = convertFieldToMapCoordinates(x, y);
+                        maxField = curVal;
+                    }
+                }
+            }
+
+            // top
+            y = yPos - offset;
+            if (y >= 0) {
+                for (x = Math.max(0, xPos - offset); x <= Math.min(xPos + offset, xDim - 1); x++) {
+                    double curVal = getValue(t, x, y);
+                    if (curVal != 0) {
+                        nonZero = true;
+                    }
+                    if (curVal > maxField) {
+                        maxPoint = convertFieldToMapCoordinates(x, y);
+                        maxField = curVal;
+                    }
+                }
+            }
+
+            // bottom
+            y = yPos + offset;
+            if (y < yDim) {
+                for (x = Math.max(0, xPos - offset); x <= Math.min(xPos + offset, xDim - 1); x++) {
+                    double curVal = getValue(t, x, y);
+                    if (curVal != 0) {
+                        nonZero = true;
+                    }
+                    if (curVal > maxField) {
+                        maxPoint = convertFieldToMapCoordinates(x, y);
+                        maxField = curVal;
+                    }
+                }
+            }
+
+            if (nonZero && offset > range) {
+                break;
+            }
         }
+
         return maxPoint;
     }
 }

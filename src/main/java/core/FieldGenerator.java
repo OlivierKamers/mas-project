@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public class FieldGenerator {
-    private static final int MATRIX_STEP = 100;
+    public static final int MATRIX_STEP = 100;
     // For testing: calculate the field every second (so it should be equal to 1 round of pickups)
     private static final int TIME_STEP = (int) Duration.between(Helper.START_TIME, Helper.STOP_TIME).getSeconds();//50;
     //    private static final int TIME_STEP = 100;

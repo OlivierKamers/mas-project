@@ -121,7 +121,7 @@ public class Taxi extends Vehicle implements CommUser {
             }
         } else if (getState() == TaxiState.IDLE) {
             // Idle
-            Point fieldPoint = df.getNextPosition(this, time.getStartTime(), FIELD_RANGE);
+            Point fieldPoint = df.getNextPosition(this, time.getStartTime(), rm, FIELD_RANGE);
             rm.moveTo(this, fieldPoint, time);
         }
     }
