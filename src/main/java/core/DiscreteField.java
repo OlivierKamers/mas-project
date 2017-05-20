@@ -4,6 +4,8 @@ import com.github.rinde.rinsim.core.model.road.RoadModel;
 import com.github.rinde.rinsim.geom.Point;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DiscreteField {
     private double[][][] fieldData;
@@ -76,6 +78,50 @@ public class DiscreteField {
         return new Point(x, y);
     }
 
+    private List<int[]> getLeftCoords(int offset, int xPos, int yPos) {
+        List<int[]> res = new ArrayList<>();
+        int x = xPos - offset;
+        if (x >= 0) {
+            for (int y = Math.max(0, yPos - offset); y <= Math.min(yPos + offset, yDim - 1); y++) {
+                res.add(new int[]{x, y});
+            }
+        }
+        return res;
+    }
+
+    private List<int[]> getRightCoords(int offset, int xPos, int yPos) {
+        List<int[]> res = new ArrayList<>();
+        int x = xPos + offset;
+        if (x < xDim) {
+            for (int y = Math.max(0, yPos - offset); y <= Math.min(yPos + offset, yDim - 1); y++) {
+                res.add(new int[]{x, y});
+            }
+        }
+        return res;
+    }
+
+    private List<int[]> getTopCoords(int offset, int xPos, int yPos) {
+        List<int[]> res = new ArrayList<>();
+        int y = yPos - offset;
+        if (y >= 0) {
+            for (int x = Math.max(0, xPos - offset); x <= Math.min(xPos + offset, xDim - 1); x++) {
+                res.add(new int[]{x, y});
+            }
+        }
+        return res;
+    }
+
+    private List<int[]> getBottomCoords(int offset, int xPos, int yPos) {
+        List<int[]> res = new ArrayList<>();
+        int y = yPos + offset;
+        if (y < yDim) {
+            for (int x = Math.max(0, xPos - offset); x <= Math.min(xPos + offset, xDim - 1); x++) {
+                res.add(new int[]{x, y});
+            }
+        }
+        return res;
+    }
+
     public Point getNextPosition(Taxi taxi, long time, RoadModel rm, int range) {
         int t = getFrameIndexForTime(time);
         int[] pos = convertMapToFieldCoordinates(taxi.getPosition().get());
@@ -86,65 +132,20 @@ public class DiscreteField {
         boolean nonZero = false;
         Point maxPoint = taxi.getPosition().get();
 
-        int x, y;
         for (int offset = 0; offset < FieldGenerator.MATRIX_STEP; offset++) {
-            // left
-            x = xPos - offset;
-            if (x >= 0) {
-                for (y = Math.max(0, yPos - offset); y <= Math.min(yPos + offset, yDim - 1); y++) {
-                    double curVal = getValue(t, x, y);
-                    if (curVal != 0) {
-                        nonZero = true;
-                    }
-                    if (curVal > maxField) {
-                        maxPoint = convertFieldToMapCoordinates(x, y);
-                        maxField = curVal;
-                    }
-                }
-            }
+            List<int[]> positions = getLeftCoords(offset, xPos, yPos);
+            positions.addAll(getRightCoords(offset, xPos, yPos));
+            positions.addAll(getTopCoords(offset, xPos, yPos));
+            positions.addAll(getBottomCoords(offset, xPos, yPos));
 
-            // right
-            x = xPos + offset;
-            if (x < xDim) {
-                for (y = Math.max(0, yPos - offset); y <= Math.min(yPos + offset, yDim - 1); y++) {
-                    double curVal = getValue(t, x, y);
-                    if (curVal != 0) {
-                        nonZero = true;
-                    }
-                    if (curVal > maxField) {
-                        maxPoint = convertFieldToMapCoordinates(x, y);
-                        maxField = curVal;
-                    }
+            for (int[] p : positions) {
+                double curVal = getValue(t, p[0], p[1]);
+                if (curVal != 0) {
+                    nonZero = true;
                 }
-            }
-
-            // top
-            y = yPos - offset;
-            if (y >= 0) {
-                for (x = Math.max(0, xPos - offset); x <= Math.min(xPos + offset, xDim - 1); x++) {
-                    double curVal = getValue(t, x, y);
-                    if (curVal != 0) {
-                        nonZero = true;
-                    }
-                    if (curVal > maxField) {
-                        maxPoint = convertFieldToMapCoordinates(x, y);
-                        maxField = curVal;
-                    }
-                }
-            }
-
-            // bottom
-            y = yPos + offset;
-            if (y < yDim) {
-                for (x = Math.max(0, xPos - offset); x <= Math.min(xPos + offset, xDim - 1); x++) {
-                    double curVal = getValue(t, x, y);
-                    if (curVal != 0) {
-                        nonZero = true;
-                    }
-                    if (curVal > maxField) {
-                        maxPoint = convertFieldToMapCoordinates(x, y);
-                        maxField = curVal;
-                    }
+                if (curVal > maxField) {
+                    maxPoint = convertFieldToMapCoordinates(p[0], p[1]);
+                    maxField = curVal;
                 }
             }
 
