@@ -28,7 +28,7 @@ public class FieldGenerator {
     public DiscreteField load() {
         MySQLDataLoader loader = new MySQLDataLoader();
         Duration timeDuration = Duration.between(Helper.START_TIME, Helper.STOP_TIME).dividedBy(TIME_STEP);
-        LocalDateTime curTime = Helper.START_TIME;
+        LocalDateTime curTime = Helper.START_TIME.minus(Helper.FIELD_TIME_OFFSET);
         for (int i = 0; i < TIME_STEP; i++) {
             this.field[i] = parseData(loader.read(curTime, curTime.plus(timeDuration)));
             curTime = curTime.plus(timeDuration);

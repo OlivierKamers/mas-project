@@ -24,32 +24,10 @@ public class MySQLDataLoader {
 
     public static void main(String[] args) {
         MySQLDataLoader loader = new MySQLDataLoader();
-        List<HistoricalData> data = loader.readAll();
-//            List<core.HistoricalData> data = loader.read(LocalDateTime.of(2015, 1, 2, 0, 0, 0), LocalDateTime.of(2015, 1, 3, 0, 0, 0));
+        List<core.HistoricalData> data = loader.read(LocalDateTime.of(2015, 1, 2, 0, 0, 0), LocalDateTime.of(2015, 1, 3, 0, 0, 0));
         System.out.println(data.size());
         for (HistoricalData d : data) {
             System.out.println(d);
-        }
-    }
-
-    /**
-     * Read all data from the database table.
-     * TODO: this is very slow
-     */
-    List<HistoricalData> readAll() {
-        Statement statement = null;
-        try {
-            statement = connection.createStatement();
-            String query = "SELECT * FROM pickups LIMIT 100;";
-            ResultSet rst = statement.executeQuery(query);
-            ArrayList<HistoricalData> result = new ArrayList<>();
-            while (rst.next()) {
-                result.add(parse(rst));
-            }
-            return result;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return Collections.emptyList();
         }
     }
 
