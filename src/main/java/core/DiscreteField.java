@@ -1,11 +1,15 @@
 package core;
 
-import com.github.rinde.rinsim.core.model.road.RoadModel;
+import com.github.rinde.rinsim.core.model.comm.Message;
 import com.github.rinde.rinsim.geom.Point;
+import com.google.common.collect.ImmutableList;
+import core.messages.PositionBroadcast;
+import org.apache.commons.math3.geometry.euclidean.twod.Vector2D;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class DiscreteField {
     private double[][][] fieldData;
@@ -122,38 +126,54 @@ public class DiscreteField {
         return res;
     }
 
-    public Point getNextPosition(Taxi taxi, long time, RoadModel rm, int range) {
+    public Point getNextPosition(Taxi taxi, long time, ImmutableList<Message> messages, int range) {
         int t = getFrameIndexForTime(time);
         int[] pos = convertMapToFieldCoordinates(taxi.getPosition().get());
         int xPos = pos[0];
         int yPos = pos[1];
-
         double maxField = Double.MIN_VALUE;
         boolean nonZero = false;
         Point maxPoint = taxi.getPosition().get();
+        Point taxiPosition = taxi.getPosition().get();
 
-        for (int offset = 0; offset < FieldGenerator.MATRIX_STEP; offset++) {
-            List<int[]> positions = getLeftCoords(offset, xPos, yPos);
-            positions.addAll(getRightCoords(offset, xPos, yPos));
-            positions.addAll(getTopCoords(offset, xPos, yPos));
-            positions.addAll(getBottomCoords(offset, xPos, yPos));
+        Vector2D vector = new Vector2D(taxiPosition.x, taxiPosition.y);
 
-            for (int[] p : positions) {
-                double curVal = getValue(t, p[0], p[1]);
-                if (curVal != 0) {
-                    nonZero = true;
-                }
-                if (curVal > maxField) {
-                    maxPoint = convertFieldToMapCoordinates(p[0], p[1]);
-                    maxField = curVal;
-                }
-            }
+        List<PositionBroadcast> positionBroadcasts = messages.stream()
+                .filter(m -> m.getContents() instanceof PositionBroadcast)
+                .map(m -> (PositionBroadcast) m.getContents()).collect(Collectors.toList());
 
-            if (nonZero && offset > range) {
-                break;
-            }
+        for (PositionBroadcast pb : positionBroadcasts) {
+            vector = updateVectorWithPB(taxiPosition, vector, pb);
         }
 
-        return maxPoint;
+
+//        for (int offset = 0; offset < FieldGenerator.MATRIX_STEP; offset++) {
+//            List<int[]> positions = getLeftCoords(offset, xPos, yPos);
+//            positions.addAll(getRightCoords(offset, xPos, yPos));
+//            positions.addAll(getTopCoords(offset, xPos, yPos));
+//            positions.addAll(getBottomCoords(offset, xPos, yPos));
+//
+//            for (int[] p : positions) {
+//                double curVal = getValue(t, p[0], p[1]);
+//                if (curVal != 0) {
+//                    nonZero = true;
+//                }
+//                if (curVal > maxField) {
+//                    maxPoint = convertFieldToMapCoordinates(p[0], p[1]);
+//                    maxField = curVal;
+//                }
+//            }
+//
+//            if (nonZero && offset > range) {
+//                break;
+//            }
+//        }
+
+        return new Point(vector.getX(), vector.getY());
+    }
+
+    private Vector2D updateVectorWithPB(Point taxiPosition, Vector2D vector, PositionBroadcast pb) {
+        Vector2D diff = new Vector2D(pb.getPosition().x - taxiPosition.x, pb.getPosition().y - taxiPosition.y);
+        return vector.add(-pb.getFreeCapacity() / Math.min(0.000000001, Point.distance(taxiPosition, pb.getPosition())), diff);
     }
 }

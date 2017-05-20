@@ -26,10 +26,7 @@ import com.github.rinde.rinsim.core.model.time.TimeLapse;
 import com.github.rinde.rinsim.geom.Point;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
-import core.messages.ContractAccept;
-import core.messages.ContractBid;
-import core.messages.ContractDeal;
-import core.messages.ContractRequest;
+import core.messages.*;
 
 import java.util.Comparator;
 
@@ -88,9 +85,11 @@ public class Taxi extends Vehicle implements CommUser {
             return;
         }
 
+        ImmutableList<Message> messages = commDevice.get().getUnreadMessages();
+
         // Idle Taxi (no objective for now, later no passengers)
         if (shouldHandleContractNet()) {
-            handleContractNet();
+            handleContractNet(messages);
 //            curr = Optional.fromNullable(RoadModels.findClosestObject(
 //                    rm.getPosition(this), rm, Parcel.class));
         }
@@ -121,9 +120,14 @@ public class Taxi extends Vehicle implements CommUser {
             }
         } else if (getState() == TaxiState.IDLE) {
             // Idle
-            Point fieldPoint = df.getNextPosition(this, time.getStartTime(), rm, FIELD_RANGE);
+            Point fieldPoint = df.getNextPosition(this, time.getStartTime(), messages, FIELD_RANGE);
             rm.moveTo(this, fieldPoint, time);
         }
+        sendPositionMessage();
+    }
+
+    private void sendPositionMessage() {
+        commDevice.get().broadcast(new PositionBroadcast(getPosition().get(), getFreeCapacity()));
     }
 
     /**
@@ -138,8 +142,7 @@ public class Taxi extends Vehicle implements CommUser {
         return getCapacity() - getPDPModel().getContentsSize(this);
     }
 
-    private void handleContractNet() {
-        ImmutableList<Message> messages = commDevice.get().getUnreadMessages();
+    private void handleContractNet(ImmutableList<Message> messages) {
         if (getState() == TaxiState.IDLE) {
             handleIdle(messages);
         }
