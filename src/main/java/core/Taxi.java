@@ -1,4 +1,5 @@
-package core;/*
+package core;
+/*
  * Copyright (C) 2011-2016 Rinde van Lon, iMinds-DistriNet, KU Leuven
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -98,11 +99,9 @@ public class Taxi extends Vehicle implements CommUser {
 
         ImmutableList<Message> messages = commDevice.get().getUnreadMessages();
 
-        // Idle Taxi (no objective for now, later no passengers)
+        // Handle the contract net (deals, pickup, delivery) if needed
         if (shouldHandleContractNet()) {
             handleContractNet(messages);
-//            curr = Optional.fromNullable(RoadModels.findClosestObject(
-//                    rm.getPosition(this), rm, Parcel.class));
         }
 
         // Taxi has not finished its route yet
@@ -112,20 +111,24 @@ public class Taxi extends Vehicle implements CommUser {
             if (rm.getPosition(this).equals(target)) {
                 // We have reached our next target.
                 // If there are customers to be dropped off here, drop them
-                currentCustomers.stream()
+                java.util.Optional<Customer> customerToDeliver = currentCustomers.stream()
                         .filter(c -> c.getDeliveryLocation().equals(rm.getPosition(this)))
                         .filter(c -> pm.containerContains(this, c))
-                        .forEach(c -> pm.deliver(this, c, time));
-                currentCustomers.removeIf(c -> c.getDeliveryLocation().equals(rm.getPosition(this)));
-                pickedUpCustomers.removeIf(c -> c.getDeliveryLocation().equals(rm.getPosition(this)));
+                        .findFirst();
+                if (customerToDeliver.isPresent()) {
+                    pm.deliver(this, customerToDeliver.get(), time);
+                    currentCustomers.remove(customerToDeliver.get());
+                    pickedUpCustomers.remove(customerToDeliver.get());
+                }
                 // If there are customers to be picked up here, pick them up
-                currentCustomers.stream()
+                java.util.Optional<Customer> customerToPickup = currentCustomers.stream()
                         .filter(c -> c.getPickupLocation().equals(rm.getPosition(this)))
                         .filter(c -> !pm.containerContains(this, c) && rm.containsObject(c))
-                        .forEach(c -> {
-                            pm.pickup(this, c, time);
-                            pickedUpCustomers.add(c);
-                        });
+                        .findFirst();
+                if (customerToPickup.isPresent()) {
+                    pm.pickup(this, customerToPickup.get(), time);
+                    pickedUpCustomers.add(customerToPickup.get());
+                }
                 route.remove(0);
                 if (route.isEmpty()) {
                     setState(TaxiState.IDLE);
@@ -133,7 +136,7 @@ public class Taxi extends Vehicle implements CommUser {
             }
         }
         if (getState() == TaxiState.IDLE) {
-            // Idle
+            // Idle state: move according to the discrete field
             fieldVector = df.getNextPosition(this, time.getStartTime(), messages, FIELD_RANGE).add(FIELD_VECTOR_FACTOR, fieldVector);
             Point targetPoint = new Point(
                     Math.max(0, Math.min(rm.getBounds().get(1).x, getPosition().get().x + fieldVector.getX())),
@@ -141,6 +144,7 @@ public class Taxi extends Vehicle implements CommUser {
             );
             rm.moveTo(this, targetPoint, time);
         }
+        // Broadcast position message
         sendPositionMessage();
     }
 
@@ -199,14 +203,15 @@ public class Taxi extends Vehicle implements CommUser {
 
     /**
      * Calculate a bid for the given customer.
-     *
-     * @param customer the customer to calculate the bid for.
-     * @return the inverse of the distance between this taxi and the customer or 0 if either of the positions are absent.
+     * The calculation is done based on the route this Taxi would take to pick up the customer.
      */
     private double getBid(Customer customer) {
-        if (getPosition().isPresent() && customer.getPosition().isPresent())
-            return Point.distance(getPosition().get(), customer.getPosition().get()) / getSpeed();
-        return 0;
+        if (getPosition().isPresent() && customer.getPosition().isPresent()) {
+            ArrayList<Customer> customersWithThisCustomer = new ArrayList<>(currentCustomers);
+            customersWithThisCustomer.add(customer);
+            return routeLength(getShortestRoute(customersWithThisCustomer)) / getSpeed();
+        }
+        return Double.MAX_VALUE;
     }
 
     /**
@@ -228,10 +233,17 @@ public class Taxi extends Vehicle implements CommUser {
      */
     private void sortRoute() {
         if (!currentCustomers.isEmpty()) {
-            ArrayList<ArrayList<Point>> allPermutations = generatePermutations(new ArrayList<>(currentCustomers));
-            route = allPermutations.stream().sorted(Comparator.comparingDouble(this::routeLength)).findFirst().get();
+            route = getShortestRoute(currentCustomers);
         }
 
+    }
+
+    /**
+     * Find the shortest route for the given list of customers.
+     */
+    private ArrayList<Point> getShortestRoute(ArrayList<Customer> customers) {
+        ArrayList<ArrayList<Point>> allPermutations = generatePermutations(new ArrayList<>(customers));
+        return allPermutations.stream().sorted(Comparator.comparingDouble(this::routeLength)).findFirst().get();
     }
 
     /**

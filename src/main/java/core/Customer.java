@@ -29,20 +29,26 @@ public class Customer extends Parcel implements CommUser, TickListener {
     private static final long SERVICE_DURATION = 10000;
     private static final double MAX_RANGE = Double.MAX_VALUE;
     private static final int MAX_TICKS_TO_WAIT_FOR_ACCEPT = 3;
+    private static final int MAX_TICKS_TO_WAIT_FOR_BID = 5;
+
 
     private long pickupTime;
 
     private long id;
     private Optional<CommDevice> commDevice;
     private CustomerState state = CustomerState.INIT;
+    private int ticksSinceSentRequest;
     private int ticksSinceSentDeal;
     private int ticksSinceCreate;
+    private int numberOfSentRequests;
 
     Customer(long id, ParcelDTO dto) {
         super(dto);
         this.id = id;
+        this.ticksSinceSentRequest = 0;
         this.ticksSinceSentDeal = 0;
         this.ticksSinceCreate = 0;
+        this.numberOfSentRequests = 0;
     }
 
     Customer(HistoricalData data, TimeLapse time) {
@@ -90,8 +96,9 @@ public class Customer extends Parcel implements CommUser, TickListener {
 
     private void sendRequest() {
         commDevice.get().broadcast(new ContractRequest(this, ticksSinceCreate));
+        numberOfSentRequests++;
+        ticksSinceSentRequest = 0;
         setState(CustomerState.SENT_REQUEST);
-
     }
 
     @Override
@@ -121,11 +128,12 @@ public class Customer extends Parcel implements CommUser, TickListener {
 
     @Override
     public void tick(TimeLapse timeLapse) {
-        ticksSinceCreate += 1;
+        ticksSinceCreate++;
 
         ImmutableList<Message> messages = commDevice.get().getUnreadMessages();
 
         if (getState() == CustomerState.SENT_REQUEST) {
+            ticksSinceSentRequest++;
             handleSentRequest(messages);
         } else if (getState() == CustomerState.SENT_DEAL) {
             ticksSinceSentDeal += 1;
@@ -140,8 +148,13 @@ public class Customer extends Parcel implements CommUser, TickListener {
                 .sorted(Comparator.comparingDouble(ContractBid::getBid))
                 .findFirst();
 
-        if (!highestBid.isPresent())
+        if (!highestBid.isPresent()) {
+            if (ticksSinceSentRequest >= MAX_TICKS_TO_WAIT_FOR_BID) {
+                // No bids arrived before the deadline so the customer sends a new request
+                sendRequest();
+            }
             return;
+        }
 
         ContractDeal deal = new ContractDeal(this, highestBid.get().getBid());
         commDevice.get().send(deal, highestBid.get().getTaxi());
@@ -173,6 +186,8 @@ public class Customer extends Parcel implements CommUser, TickListener {
                 .append(getId())
                 .append("{")
                 .append(getState())
+                .append(" #")
+                .append(numberOfSentRequests)
                 .append("}").toString();
     }
 
