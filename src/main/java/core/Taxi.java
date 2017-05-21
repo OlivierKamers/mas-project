@@ -35,15 +35,15 @@ import java.util.ArrayList;
 import java.util.Comparator;
 
 /**
- * Implementation of a very simple taxi agent. It moves to the closest customer,
- * picks it up, then delivers it, repeat.
+ * Implementation of a Taxi agent.
+ * It can pick up multiple customers and calculate the most efficient route to take.
+ * When idle, the Taxi uses historical knowledge and messages from neighboring vehicles to move to a more optimal waiting location.
  *
- * @author Rinde van Lon
+ * @author Evert Etienne & Olivier Kamers
  */
 public class Taxi extends Vehicle implements CommUser {
-    public static final double COMMUNICATION_RANGE = 1;
-    public static final double FIELD_INFLUENCE_RANGE = 0.5;
-
+    static final double FIELD_INFLUENCE_RANGE = 0.5;
+    private static final double COMMUNICATION_RANGE = 1;
     private static final double SPEED = 1000d;
     private static final int FIELD_RANGE = 5;
     private static final double FIELD_VECTOR_FACTOR = 0.5;
@@ -235,7 +235,6 @@ public class Taxi extends Vehicle implements CommUser {
         if (!currentCustomers.isEmpty()) {
             route = getShortestRoute(currentCustomers);
         }
-
     }
 
     /**

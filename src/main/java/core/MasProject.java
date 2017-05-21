@@ -25,6 +25,7 @@ import com.github.rinde.rinsim.event.Listener;
 import com.github.rinde.rinsim.ui.View;
 import com.github.rinde.rinsim.ui.renderers.PlaneRoadModelRenderer;
 import com.github.rinde.rinsim.ui.renderers.RoadUserRenderer;
+import core.statistics.StatsPanel;
 import core.statistics.StatsTracker;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.eclipse.swt.widgets.Display;
@@ -193,6 +194,7 @@ public final class MasProject {
                 .with(DiscreteFieldRenderer.builder()
                         .withField(df)
                 )
+                .with(StatsPanel.builder())
 //                .with(CommRenderer.builder().withReliabilityColors())
                 .with(RoadUserRenderer.builder()
                         .withImageAssociation(

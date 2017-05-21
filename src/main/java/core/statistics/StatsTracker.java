@@ -54,6 +54,14 @@ public final class StatsTracker extends AbstractModelVoid {
     private final Clock clock;
     private final RoadModel roadModel;
 
+    StatsTracker() {
+        clock = null;
+        roadModel = null;
+
+        eventDispatcher = new EventDispatcher(StatisticsEventType.values());
+        theListener = new TheListener();
+    }
+
     StatsTracker(Clock c, RoadModel rm, PDPModel pm) {
         clock = c;
         roadModel = rm;
@@ -128,10 +136,10 @@ public final class StatsTracker extends AbstractModelVoid {
 
         @Override
         public StatsTracker build(DependencyProvider dependencyProvider) {
-            final Clock clck = dependencyProvider.get(Clock.class);
+            final Clock clock = dependencyProvider.get(Clock.class);
             final RoadModel rm = dependencyProvider.get(RoadModel.class);
             final PDPModel pm = dependencyProvider.get(PDPModel.class);
-            return new StatsTracker(clck, rm, pm);
+            return new StatsTracker(clock, rm, pm);
         }
     }
 
