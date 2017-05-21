@@ -80,12 +80,34 @@ public class StatisticsDTO implements Serializable {
     public final int acceptedParcels;
     /**
      * The cumulative pickup waiting time of all parcels.
+     * This is the time between the announcement of a parcel and the time it is picked up by an agent.
      */
     public final long pickupWaitingTime;
     /**
-     * The cumulative travel speed of all parcels.
+     * The average pickup waiting time of all parcels.
+     * This is the {@link #pickupWaitingTime} divided by the {@link #totalDeliveries}.
      */
-    public final float travelSpeed;
+    public final long pickupWaitingTimeAvg;
+    /**
+     * The total number of contract requests sent by parcels that have been picked up.
+     */
+    public final int numberOfRequests;
+    /**
+     * The average number of contract requests sent per parcel.
+     * This is the {@link #numberOfRequests} divided by the {@link #totalDeliveries}.
+     */
+    public final float numberOfRequestsAverage;
+    /**
+     * The cumulative travel time overhead of all parcels.
+     * This is the actual time it took to go from its pickup location to its delivery location
+     * divided by the time it would have taken if the taxi drove in a straight line at its max speed.
+     */
+    public final float travelTimeOverhead;
+    /**
+     * The average travel time overhead.
+     * This is the {@link #travelTimeOverhead} divided by the {@link #totalDeliveries}.
+     */
+    public final float travelTimeOverheadAvg;
     /**
      * The time (ms) it took to compute the simulation.
      */
@@ -111,24 +133,25 @@ public class StatisticsDTO implements Serializable {
     /**
      * Create a new statistics object.
      *
-     * @param dist     {@link #totalDistance}.
-     * @param pick     {@link #totalPickups}.
-     * @param del      {@link #totalDeliveries}.
-     * @param parc     {@link #totalParcels}.
-     * @param accP     {@link #acceptedParcels}.
-     * @param pickWT   {@link #pickupWaitingTime}.
-     * @param travelSp {@link #travelSpeed}.
-     * @param compT    {@link #computationTime}.
-     * @param simT     {@link #simulationTime}.
-     * @param finish   {@link #simFinish}.
-     * @param totalVeh {@link #totalVehicles}.
-     * @param moved    {@link #movedVehicles}.
-     * @param time     {@link #timeUnit}.
-     * @param distUnit {@link #distanceUnit}.
-     * @param speed    {@link #speedUnit}.
+     * @param dist      {@link #totalDistance}.
+     * @param pick      {@link #totalPickups}.
+     * @param del       {@link #totalDeliveries}.
+     * @param parc      {@link #totalParcels}.
+     * @param accP      {@link #acceptedParcels}.
+     * @param pickWT    {@link #pickupWaitingTime}.
+     * @param req       {@link #numberOfRequests}.
+     * @param travelTOh {@link #travelTimeOverhead}.
+     * @param compT     {@link #computationTime}.
+     * @param simT      {@link #simulationTime}.
+     * @param finish    {@link #simFinish}.
+     * @param totalVeh  {@link #totalVehicles}.
+     * @param moved     {@link #movedVehicles}.
+     * @param time      {@link #timeUnit}.
+     * @param distUnit  {@link #distanceUnit}.
+     * @param speed     {@link #speedUnit}.
      */
     public StatisticsDTO(double dist, int pick, int del, int parc, int accP,
-                         long pickWT, float travelSp, long compT, long simT, boolean finish,
+                         long pickWT, int req, float travelTOh, long compT, long simT, boolean finish,
                          int totalVeh, int moved, Unit<Duration> time,
                          Unit<Length> distUnit, Unit<Velocity> speed) {
         totalDistance = dist;
@@ -137,7 +160,11 @@ public class StatisticsDTO implements Serializable {
         totalParcels = parc;
         acceptedParcels = accP;
         pickupWaitingTime = pickWT;
-        travelSpeed = travelSp;
+        pickupWaitingTimeAvg = (totalDeliveries > 0) ? pickupWaitingTime / totalDeliveries : 0;
+        numberOfRequests = req;
+        numberOfRequestsAverage = (totalPickups > 0) ? 1f * numberOfRequests / totalPickups : 0;
+        travelTimeOverhead = travelTOh;
+        travelTimeOverheadAvg = (totalDeliveries > 0) ? travelTimeOverhead / totalDeliveries : 0;
         computationTime = compT;
         simulationTime = simT;
         simFinish = finish;
@@ -172,7 +199,7 @@ public class StatisticsDTO implements Serializable {
                 .append(totalParcels, other.totalParcels)
                 .append(acceptedParcels, other.acceptedParcels)
                 .append(pickupWaitingTime, other.pickupTardiness)
-                .append(travelSpeed, other.deliveryTardiness)
+                .append(travelTimeOverhead, other.deliveryTardiness)
                 .append(simulationTime, other.simulationTime)
                 .append(simFinish, other.simFinish)
                 .append(totalVehicles, other.totalVehicles)
@@ -182,7 +209,7 @@ public class StatisticsDTO implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hashCode(totalDistance, totalPickups, totalParcels,
-                acceptedParcels, pickupWaitingTime, travelSpeed, simulationTime,
+                acceptedParcels, pickupWaitingTime, travelTimeOverhead, simulationTime,
                 simFinish, totalVehicles, movedVehicles);
     }
 }

@@ -127,6 +127,7 @@ public class Taxi extends Vehicle implements CommUser {
                         .findFirst();
                 if (customerToPickup.isPresent()) {
                     pm.pickup(this, customerToPickup.get(), time);
+                    customerToPickup.get().setPickupTime(time.getTime());
                     pickedUpCustomers.add(customerToPickup.get());
                 }
                 route.remove(0);

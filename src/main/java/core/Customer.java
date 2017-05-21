@@ -77,6 +77,10 @@ public class Customer extends Parcel implements CommUser, TickListener {
                 .buildDTO());
     }
 
+    public int getNumberOfSentRequests() {
+        return numberOfSentRequests;
+    }
+
     public long getId() {
         return id;
     }
