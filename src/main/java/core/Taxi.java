@@ -50,6 +50,7 @@ public class Taxi extends Vehicle implements CommUser {
     private final int id;
     private Vector2D fieldVector;
     private ArrayList<Customer> currentCustomers;
+    private ArrayList<Customer> pickedUpCustomers;
     private ArrayList<Point> route;
     private Optional<CommDevice> commDevice;
     private TaxiState state;
@@ -62,6 +63,7 @@ public class Taxi extends Vehicle implements CommUser {
                 .speed(SPEED)
                 .build());
         this.currentCustomers = new ArrayList<>();
+        this.pickedUpCustomers = new ArrayList<>();
         this.route = new ArrayList<>();
         this.id = id;
         this.df = df;
@@ -115,11 +117,15 @@ public class Taxi extends Vehicle implements CommUser {
                         .filter(c -> pm.containerContains(this, c))
                         .forEach(c -> pm.deliver(this, c, time));
                 currentCustomers.removeIf(c -> c.getDeliveryLocation().equals(rm.getPosition(this)));
+                pickedUpCustomers.removeIf(c -> c.getDeliveryLocation().equals(rm.getPosition(this)));
                 // If there are customers to be picked up here, pick them up
                 currentCustomers.stream()
                         .filter(c -> c.getPickupLocation().equals(rm.getPosition(this)))
                         .filter(c -> !pm.containerContains(this, c) && rm.containsObject(c))
-                        .forEach(c -> pm.pickup(this, c, time));
+                        .forEach(c -> {
+                            pm.pickup(this, c, time);
+                            pickedUpCustomers.add(c);
+                        });
                 route.remove(0);
                 if (route.isEmpty()) {
                     setState(TaxiState.IDLE);
@@ -217,32 +223,58 @@ public class Taxi extends Vehicle implements CommUser {
         setState(TaxiState.BUSY);
     }
 
+    /**
+     * Generate the shortest route for this taxi taking into account its current customers.
+     */
     private void sortRoute() {
         if (!currentCustomers.isEmpty()) {
-            ArrayList<ArrayList<Point>> allPerms = generatePerm(new ArrayList<>(currentCustomers));
-            route = allPerms.stream().sorted(Comparator.comparingDouble(this::routeLength)).findFirst().get();
+            ArrayList<ArrayList<Point>> allPermutations = generatePermutations(new ArrayList<>(currentCustomers));
+            route = allPermutations.stream().sorted(Comparator.comparingDouble(this::routeLength)).findFirst().get();
         }
 
     }
 
-    private ArrayList<ArrayList<Point>> generatePerm(ArrayList<Customer> original) {
-        if (original.size() == 0) {
+    /**
+     * Generate all valid routes for the given list of customers.
+     * It creates all permutations taking into account that pickup has to occur before delivery
+     * and taking into account which customers have already been picked up.
+     */
+    private ArrayList<ArrayList<Point>> generatePermutations(ArrayList<Customer> customers) {
+        if (customers.isEmpty()) {
+            // Base case for recursion: empty route
             ArrayList<ArrayList<Point>> result = new ArrayList<>();
             result.add(new ArrayList<>());
             return result;
         }
-        Customer firstElement = original.remove(0);
-        Point firstPickup = firstElement.getPickupLocation();
-        Point firstDelivery = firstElement.getDeliveryLocation();
+
+        // Remove first customer in the list
+        Customer firstCustomer = customers.remove(0);
+
+        // Recursive case with the remaining customers
+        ArrayList<ArrayList<Point>> permutations = generatePermutations(customers);
+
+        // Create new permutations from the recursive case and the current customer
         ArrayList<ArrayList<Point>> returnValue = new ArrayList<>();
-        // Recursive case
-        ArrayList<ArrayList<Point>> permutations = generatePerm(original);
-        // Insert pickup and delivery for this customer in all possible positions (pickup before delivery) for all other permutations
-        for (ArrayList<Point> smallerPermuted : permutations) {
-            for (int pickupIndex = 0; pickupIndex <= smallerPermuted.size(); pickupIndex++) {
-                for (int deliveryIndex = pickupIndex + 1; deliveryIndex <= smallerPermuted.size() + 1; deliveryIndex++) {
+        Point firstPickup = firstCustomer.getPickupLocation();
+        Point firstDelivery = firstCustomer.getDeliveryLocation();
+        if (!pickedUpCustomers.contains(firstCustomer)) {
+            // Insert pickup and delivery for this customer in all possible positions (pickup before delivery) for all other permutations
+            for (ArrayList<Point> smallerPermuted : permutations) {
+                for (int pickupIndex = 0; pickupIndex <= smallerPermuted.size(); pickupIndex++) {
+                    for (int deliveryIndex = pickupIndex + 1; deliveryIndex <= smallerPermuted.size() + 1; deliveryIndex++) {
+                        ArrayList<Point> temp = new ArrayList<>(smallerPermuted);
+                        temp.add(pickupIndex, firstPickup);
+                        temp.add(deliveryIndex, firstDelivery);
+                        returnValue.add(temp);
+                    }
+                }
+            }
+        } else {
+            // The current customer has already been picked up so we don't add his pickupLocation to the route
+            // Insert delivery for this customer in all possible positions for all other permutations
+            for (ArrayList<Point> smallerPermuted : permutations) {
+                for (int deliveryIndex = 0; deliveryIndex <= smallerPermuted.size(); deliveryIndex++) {
                     ArrayList<Point> temp = new ArrayList<>(smallerPermuted);
-                    temp.add(pickupIndex, firstPickup);
                     temp.add(deliveryIndex, firstDelivery);
                     returnValue.add(temp);
                 }
