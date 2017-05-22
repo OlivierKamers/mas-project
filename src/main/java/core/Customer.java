@@ -59,7 +59,7 @@ public class Customer extends Parcel implements CommUser, TickListener {
                 .orderAnnounceTime(time.getStartTime())
                 // TODO: window bepalen
                 .pickupTimeWindow(TimeWindow.create(time.getStartTime(), time.getEndTime() + 1000000))
-                .neededCapacity(data.getPassengerCount())
+                .neededCapacity(data.getPassengerCount() > MasProject.TAXI_CAPACITY ? MasProject.TAXI_CAPACITY : data.getPassengerCount())
                 .serviceDuration(SERVICE_DURATION)
                 .buildDTO());
     }

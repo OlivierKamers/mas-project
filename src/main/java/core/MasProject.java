@@ -40,11 +40,11 @@ import java.util.Random;
  * @author Evert Etienne & Olivier Kamers
  */
 public final class MasProject {
-    public static final double MAX_SPEED = 50;
-    private static final int NUM_TAXIS = 200;
-    private static final int TAXI_CAPACITY = 6;
+    public static final double MAX_SPEED = 15;
+    public static final int TAXI_CAPACITY = 5;
+    private static final int NUM_TAXIS = 10000;
     private static final int SPEED_UP = 5;
-    private static final double CUSTOMER_SAMPLE = 0.2;
+    private static final double DATA_SAMPLE = 0.05;
 
     private static Random r = new Random();
 
@@ -113,7 +113,7 @@ public final class MasProject {
         final RoadModel roadModel = simulator.getModelProvider().getModel(RoadModel.class);
 
         // Register random Taxis
-        for (int i = 0; i < NUM_TAXIS; i++) {
+        for (int i = 0; i < NUM_TAXIS * DATA_SAMPLE; i++) {
             simulator.register(new Taxi(i, roadModel.getRandomPosition(rng), TAXI_CAPACITY, discreteField));
         }
 
@@ -137,7 +137,7 @@ public final class MasProject {
 
                     for (HistoricalData h : data) {
                         float chance = r.nextFloat();
-                        if (chance <= CUSTOMER_SAMPLE) {
+                        if (chance <= DATA_SAMPLE) {
                             simulator.register(new Customer(h, time));
                         }
                     }
