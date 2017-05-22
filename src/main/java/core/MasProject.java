@@ -43,7 +43,7 @@ public final class MasProject {
     public static final double MAX_SPEED = 15;
     public static final int TAXI_CAPACITY = 5;
     private static final int NUM_TAXIS = 10000;
-    private static final int SPEED_UP = 5;
+    private static final int SPEED_UP = 15;
     private static final double DATA_SAMPLE = 0.05;
 
     private static Random r = new Random();
