@@ -24,6 +24,7 @@ import com.github.rinde.rinsim.core.model.time.TimeLapse;
 import com.github.rinde.rinsim.ui.View;
 import com.github.rinde.rinsim.ui.renderers.PlaneRoadModelRenderer;
 import com.github.rinde.rinsim.ui.renderers.RoadUserRenderer;
+import core.statistics.StatisticsDTO;
 import core.statistics.StatsPanel;
 import core.statistics.StatsTracker;
 import org.apache.commons.cli.*;
@@ -43,8 +44,8 @@ public final class MasProject {
     public static final double MAX_SPEED = 15;
     public static final int TAXI_CAPACITY = 5;
     private static final int NUM_TAXIS = 10000;
-    private static final int SPEED_UP = 15;
-    private static final double DATA_SAMPLE = 0.05;
+    private static final int SPEED_UP = 5;
+    private static final double DEFAULT_SAMPLE = 0.05;
 
     private static Random r = new Random();
 
@@ -61,6 +62,7 @@ public final class MasProject {
 
         options.addOption(new Option("g", "gui", false, "Run with GUI"));
         options.addOption(new Option("f", "field", false, "Enable field"));
+        options.addOption(Option.builder("s").longOpt("sample").desc("Data sampling factor").hasArg().type(Number.class).build());
 
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -70,8 +72,9 @@ public final class MasProject {
             cmd = parser.parse(options, args);
             boolean showGUI = cmd.hasOption("gui");
             boolean useField = cmd.hasOption("field");
+            double sample = cmd.hasOption("sample") ? (double) cmd.getParsedOptionValue("sample") : DEFAULT_SAMPLE;
 
-            run(showGUI, useField);
+            run(showGUI, useField, sample);
         } catch (ParseException e) {
             System.out.println(e.getMessage());
             formatter.printHelp("MAS-project", options);
@@ -82,10 +85,8 @@ public final class MasProject {
 
     /**
      * Starts the project.
-     *
-     * @return The simulator instance.
      */
-    public static void run(boolean showGUI, boolean useField) {
+    public static void run(boolean showGUI, boolean useField, double sample) {
         DiscreteField discreteField = null;
         if (useField) {
             FieldGenerator fieldGenerator = new FieldGenerator();
@@ -113,7 +114,7 @@ public final class MasProject {
         final RoadModel roadModel = simulator.getModelProvider().getModel(RoadModel.class);
 
         // Register random Taxis
-        for (int i = 0; i < NUM_TAXIS * DATA_SAMPLE; i++) {
+        for (int i = 0; i < NUM_TAXIS * sample; i++) {
             simulator.register(new Taxi(i, roadModel.getRandomPosition(rng), TAXI_CAPACITY, discreteField));
         }
 
@@ -137,7 +138,7 @@ public final class MasProject {
 
                     for (HistoricalData h : data) {
                         float chance = r.nextFloat();
-                        if (chance <= DATA_SAMPLE) {
+                        if (chance <= sample) {
                             simulator.register(new Customer(h, time));
                         }
                     }
@@ -152,7 +153,9 @@ public final class MasProject {
         simulator.start();
 
         // simulation is done, lets print the statistics!
-        System.out.println(simulator.getModelProvider().getModel(StatsTracker.class).getStatistics());
+        StatisticsDTO stats = simulator.getModelProvider().getModel(StatsTracker.class).getStatistics();
+        System.out.println(stats);
+        stats.save();
     }
 
     static View.Builder createGui(DiscreteField df) {
