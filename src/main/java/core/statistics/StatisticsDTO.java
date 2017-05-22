@@ -12,6 +12,7 @@ import javax.measure.quantity.Velocity;
 import javax.measure.unit.Unit;
 import java.io.*;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Date;
 
 /*
@@ -41,7 +42,7 @@ import java.util.Date;
  */
 public class StatisticsDTO implements Serializable {
     private static final long serialVersionUID = 1968951252238291733L;
-    private static final String CSV_SEPARATOR = ",";
+    private static final String CSV_SEPARATOR = ";";
 
     /**
      * The time unit that is used in the simulation that generated this statistics
@@ -85,10 +86,27 @@ public class StatisticsDTO implements Serializable {
      * The cumulative pickup waiting time of all parcels.
      * This is the time between the announcement of a parcel and the time it is picked up by an agent.
      */
-    public final long pickupWaitingTime;
+    public final ArrayList<Long> pickupWaitingTimes;
+    /**
+     * The cumulative pickup waiting time of all parcels.
+     * This is the time between the announcement of a parcel and the time it is picked up by an agent.
+     */
+    public final long pickupWaitingTimeTotal;
+    /**
+     * The minimum pickup waiting time of all parcels.
+     */
+    public final long pickupWaitingTimeMin;
+    /**
+     * The maximum pickup waiting time of all parcels.
+     */
+    public final long pickupWaitingTimeMax;
+    /**
+     * The maximum pickup waiting time of all parcels.
+     */
+    public final long pickupWaitingTimeMedian;
     /**
      * The average pickup waiting time of all parcels.
-     * This is the {@link #pickupWaitingTime} divided by the {@link #totalDeliveries}.
+     * This is the {@link #pickupWaitingTimeTotal} divided by the {@link #totalDeliveries}.
      */
     public final long pickupWaitingTimeAvg;
     /**
@@ -141,7 +159,7 @@ public class StatisticsDTO implements Serializable {
      * @param del       {@link #totalDeliveries}.
      * @param parc      {@link #totalParcels}.
      * @param accP      {@link #acceptedParcels}.
-     * @param pickWT    {@link #pickupWaitingTime}.
+     * @param pickWT    {@link #pickupWaitingTimeTotal}.
      * @param req       {@link #numberOfRequests}.
      * @param travelTOh {@link #travelTimeOverhead}.
      * @param compT     {@link #computationTime}.
@@ -154,7 +172,7 @@ public class StatisticsDTO implements Serializable {
      * @param speed     {@link #speedUnit}.
      */
     public StatisticsDTO(double dist, int pick, int del, int parc, int accP,
-                         long pickWT, int req, float travelTOh, long compT, long simT, boolean finish,
+                         ArrayList<Long> pickWT, int req, float travelTOh, long compT, long simT, boolean finish,
                          int totalVeh, int moved, Unit<Duration> time,
                          Unit<Length> distUnit, Unit<Velocity> speed) {
         totalDistance = dist;
@@ -162,8 +180,12 @@ public class StatisticsDTO implements Serializable {
         totalDeliveries = del;
         totalParcels = parc;
         acceptedParcels = accP;
-        pickupWaitingTime = pickWT;
-        pickupWaitingTimeAvg = (totalDeliveries > 0) ? pickupWaitingTime / totalDeliveries : 0;
+        pickupWaitingTimes = pickWT;
+        pickupWaitingTimeTotal = !pickWT.isEmpty() ? pickWT.stream().mapToLong(Long::longValue).sum() : 0;
+        pickupWaitingTimeMin = !pickWT.isEmpty() ? pickWT.stream().mapToLong(Long::longValue).min().getAsLong() : 0;
+        pickupWaitingTimeMax = !pickWT.isEmpty() ? pickWT.stream().mapToLong(Long::longValue).max().getAsLong() : 0;
+        pickupWaitingTimeMedian = !pickWT.isEmpty() ? pickWT.get(pickWT.size() / 2) : 0L;
+        pickupWaitingTimeAvg = (totalDeliveries > 0) ? pickupWaitingTimeTotal / totalDeliveries : 0;
         numberOfRequests = req;
         numberOfRequestsAverage = (totalPickups > 0) ? 1f * numberOfRequests / totalPickups : 0;
         travelTimeOverhead = travelTOh;
@@ -201,7 +223,7 @@ public class StatisticsDTO implements Serializable {
                 .append(totalDeliveries, other.totalDeliveries)
                 .append(totalParcels, other.totalParcels)
                 .append(acceptedParcels, other.acceptedParcels)
-                .append(pickupWaitingTime, other.pickupTardiness)
+                .append(pickupWaitingTimeTotal, other.pickupTardiness)
                 .append(travelTimeOverhead, other.deliveryTardiness)
                 .append(simulationTime, other.simulationTime)
                 .append(simFinish, other.simFinish)
@@ -212,7 +234,7 @@ public class StatisticsDTO implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hashCode(totalDistance, totalPickups, totalParcels,
-                acceptedParcels, pickupWaitingTime, travelTimeOverhead, simulationTime,
+                acceptedParcels, pickupWaitingTimeTotal, travelTimeOverhead, simulationTime,
                 simFinish, totalVehicles, movedVehicles);
     }
 

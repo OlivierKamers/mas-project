@@ -40,6 +40,7 @@ import core.Customer;
 import core.MasProject;
 
 import javax.measure.unit.Unit;
+import java.util.ArrayList;
 import java.util.Map;
 
 import static com.github.rinde.rinsim.core.model.pdp.PDPModel.PDPModelEventType.*;
@@ -102,7 +103,7 @@ public final class StatsTracker extends AbstractModelVoid {
                 theListener.totalDistance,
                 theListener.totalPickups, theListener.totalDeliveries,
                 theListener.totalParcels, theListener.acceptedParcels,
-                theListener.pickupWaitingTime, theListener.totalRequestsBeforePickup, theListener.travelOverhead, compTime,
+                theListener.pickupWaitingTimes, theListener.totalRequestsBeforePickup, theListener.travelOverhead, compTime,
                 clock.getCurrentTime(), theListener.simFinish,
                 theListener.totalVehicles, theListener.distanceMap.size(),
                 clock.getTimeUnit(), roadModel.getDistanceUnit(),
@@ -157,7 +158,7 @@ public final class StatsTracker extends AbstractModelVoid {
         int totalPickups;
         int totalRequestsBeforePickup;
         int totalDeliveries;
-        long pickupWaitingTime;
+        ArrayList<Long> pickupWaitingTimes;
         float travelOverhead;
 
         // simulation
@@ -179,7 +180,7 @@ public final class StatsTracker extends AbstractModelVoid {
 
             totalPickups = 0;
             totalDeliveries = 0;
-            pickupWaitingTime = 0;
+            pickupWaitingTimes = new ArrayList<>();
             travelOverhead = 0;
 
             simFinish = false;
@@ -208,7 +209,7 @@ public final class StatsTracker extends AbstractModelVoid {
                 assert vehicle != null;
 
                 final long waitingTime = pme.time - parcel.getOrderAnnounceTime();
-                pickupWaitingTime += waitingTime;
+                pickupWaitingTimes.add(waitingTime);
             } else if (e.getEventType() == PDPModelEventType.END_PICKUP) {
                 verify(e instanceof PDPModelEvent);
                 final PDPModelEvent pme = (PDPModelEvent) e;
