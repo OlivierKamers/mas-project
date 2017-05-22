@@ -10,7 +10,9 @@ import javax.measure.quantity.Duration;
 import javax.measure.quantity.Length;
 import javax.measure.quantity.Velocity;
 import javax.measure.unit.Unit;
-import java.io.Serializable;
+import java.io.*;
+import java.lang.reflect.Field;
+import java.util.Date;
 
 /*
  * Copyright (C) 2011-2016 Rinde van Lon, iMinds-DistriNet, KU Leuven
@@ -39,6 +41,7 @@ import java.io.Serializable;
  */
 public class StatisticsDTO implements Serializable {
     private static final long serialVersionUID = 1968951252238291733L;
+    private static final String CSV_SEPARATOR = ",";
 
     /**
      * The time unit that is used in the simulation that generated this statistics
@@ -211,5 +214,43 @@ public class StatisticsDTO implements Serializable {
         return Objects.hashCode(totalDistance, totalPickups, totalParcels,
                 acceptedParcels, pickupWaitingTime, travelTimeOverhead, simulationTime,
                 simFinish, totalVehicles, movedVehicles);
+    }
+
+    public void save() {
+        try {
+            String fileName = "stats.csv";
+            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fileName, true), "UTF-8"));
+            final Field[] fields = getClass().getFields();
+            BufferedReader br = new BufferedReader(new FileReader(fileName));
+            if (br.readLine() == null) {
+                StringBuilder header = new StringBuilder();
+                header.append("date");
+                for (Field field : fields) {
+                    try {
+                        header.append(CSV_SEPARATOR);
+                        header.append(field.getName());
+                    } catch (final IllegalArgumentException e) {
+                        e.printStackTrace();
+                    }
+                }
+                bw.write(header.toString());
+            }
+            bw.newLine();
+            StringBuilder sb = new StringBuilder();
+            sb.append(new Date().toString());
+            for (Field field : fields) {
+                try {
+                    sb.append(CSV_SEPARATOR);
+                    sb.append(field.get(this).toString());
+                } catch (final IllegalArgumentException | IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+            }
+            bw.write(sb.toString());
+            bw.flush();
+            bw.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

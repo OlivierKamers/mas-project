@@ -1,7 +1,8 @@
 .idea
 *.pyc
 target/
-*.csv
+scripts/data/*.csv
+src/main/resources/data/*.csv
 .Rproj.user
 .RHistory
 .RData

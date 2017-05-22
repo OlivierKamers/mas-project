@@ -24,6 +24,7 @@ import com.github.rinde.rinsim.core.model.time.TimeLapse;
 import com.github.rinde.rinsim.ui.View;
 import com.github.rinde.rinsim.ui.renderers.PlaneRoadModelRenderer;
 import com.github.rinde.rinsim.ui.renderers.RoadUserRenderer;
+import core.statistics.StatisticsDTO;
 import core.statistics.StatsPanel;
 import core.statistics.StatsTracker;
 import org.apache.commons.cli.*;
@@ -152,7 +153,9 @@ public final class MasProject {
         simulator.start();
 
         // simulation is done, lets print the statistics!
-        System.out.println(simulator.getModelProvider().getModel(StatsTracker.class).getStatistics());
+        StatisticsDTO stats = simulator.getModelProvider().getModel(StatsTracker.class).getStatistics();
+        System.out.println(stats);
+        stats.save();
     }
 
     static View.Builder createGui(DiscreteField df) {
