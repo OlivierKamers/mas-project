@@ -7,7 +7,7 @@ import java.util.List;
 public class FieldGenerator {
     public static final int MATRIX_STEP = 100;
     // For testing: calculate the field every second (so it should be equal to 1 round of pickups)
-    private static final int TIME_STEP = (int) Duration.between(Helper.START_TIME, Helper.STOP_TIME).getSeconds();//50;
+    private static final int TIME_STEP = (int) (Duration.between(Helper.START_TIME, Helper.STOP_TIME).getSeconds() / 60.0);
     //    private static final int TIME_STEP = 100;
     private static double FIELD_INFLUENCE = 0.5;
     private double[][][] field;

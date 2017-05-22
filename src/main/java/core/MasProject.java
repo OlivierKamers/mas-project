@@ -102,7 +102,8 @@ public final class MasProject {
         simulator.addTickListener(new TickListener() {
             @Override
             public void tick(TimeLapse time) {
-                System.out.println(roadModel.getObjectsOfType(core.Customer.class).size());
+//                System.out.println(Helper.START_TIME.plusNanos(time.getEndTime() * 1000000));
+
                 if (Helper.START_TIME.plusNanos(time.getEndTime() * 1000000).isAfter(Helper.STOP_TIME)) {
                     if (roadModel.getObjectsOfType(Customer.class).isEmpty() &&
                             roadModel.getObjectsOfType(Taxi.class).stream().allMatch(t -> t.getState() == Taxi.TaxiState.IDLE)) {
@@ -149,7 +150,7 @@ public final class MasProject {
                                 .withImageAssociation(
                                         Taxi.class, "/graphics/flat/taxi-32.png")
                                 .withImageAssociation(
-                                        Customer.class, "/graphics/flat/person-red-32.png")
+                                        Customer.class, "/graphics/flat/hailing-cab-32.png")
 //                        .withToStringLabel()
                 )
                 .with(TaxiRenderer.builder(TaxiRenderer.Language.ENGLISH))
