@@ -172,7 +172,7 @@ public class Customer extends Parcel implements CommUser, TickListener {
                 .map(msg -> (ContractAccept) msg.getContents())
                 .findFirst();
         if (accept.isPresent()) {
-            System.out.println(toString() + " accepted by " + accept.get().getTaxi().toString());
+//            System.out.println(toString() + " accepted by " + accept.get().getTaxi().toString());
             setState(CustomerState.TAKEN);
         } else if (ticksSinceSentDeal >= MAX_TICKS_TO_WAIT_FOR_ACCEPT) {
             sendRequest();

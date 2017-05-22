@@ -76,7 +76,7 @@ public class Taxi extends Vehicle implements CommUser {
         return id;
     }
 
-    private TaxiState getState() {
+    public TaxiState getState() {
         return state;
     }
 
