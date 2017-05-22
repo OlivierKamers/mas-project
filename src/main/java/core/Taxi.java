@@ -43,7 +43,7 @@ import java.util.Comparator;
  */
 public class Taxi extends Vehicle implements CommUser {
     static final double FIELD_INFLUENCE_RANGE = 0.5;
-    private static final double COMMUNICATION_RANGE = 1;
+    private static final double COMMUNICATION_RANGE = Helper.ROADMODEL_BOUNDARIES_SCALE;
     private static final double SPEED = 1000d;
     private static final int FIELD_RANGE = 5;
     private static final double FIELD_VECTOR_FACTOR = 0.5;
@@ -136,7 +136,7 @@ public class Taxi extends Vehicle implements CommUser {
                 }
             }
         }
-        if (getState() == TaxiState.IDLE) {
+        if (getState() == TaxiState.IDLE && df != null) {
             // Idle state: move according to the discrete field
             fieldVector = df.getNextPosition(this, time.getStartTime(), messages, FIELD_RANGE).add(FIELD_VECTOR_FACTOR, fieldVector);
             Point targetPoint = new Point(

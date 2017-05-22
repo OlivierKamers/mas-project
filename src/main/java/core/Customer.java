@@ -27,7 +27,7 @@ import java.util.Comparator;
 public class Customer extends Parcel implements CommUser, TickListener {
     // time in ms
     private static final long SERVICE_DURATION = 10000;
-    private static final double MAX_RANGE = Double.MAX_VALUE;
+    private static final double MAX_RANGE = Helper.ROADMODEL_BOUNDARIES_SCALE;
     private static final int MAX_TICKS_TO_WAIT_FOR_ACCEPT = 3;
     private static final int MAX_TICKS_TO_WAIT_FOR_BID = 5;
 

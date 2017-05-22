@@ -26,6 +26,7 @@ import com.github.rinde.rinsim.ui.renderers.PlaneRoadModelRenderer;
 import com.github.rinde.rinsim.ui.renderers.RoadUserRenderer;
 import core.statistics.StatsPanel;
 import core.statistics.StatsTracker;
+import org.apache.commons.cli.*;
 import org.apache.commons.math3.random.RandomGenerator;
 
 import javax.annotation.Nullable;
@@ -56,10 +57,27 @@ public final class MasProject {
      * @param args The first option may optionally indicate the end time of the simulation.
      */
     public static void main(@Nullable String[] args) {
-//        final long endTime = args != null && args.length >= 1 ? Long
-//                .parseLong(args[0]) : Long.MAX_VALUE;
+        Options options = new Options();
 
-        run();
+        options.addOption(new Option("g", "gui", false, "Run with GUI"));
+        options.addOption(new Option("f", "field", false, "Enable field"));
+
+        CommandLineParser parser = new DefaultParser();
+        HelpFormatter formatter = new HelpFormatter();
+        CommandLine cmd;
+
+        try {
+            cmd = parser.parse(options, args);
+            boolean showGUI = cmd.hasOption("gui");
+            boolean useField = cmd.hasOption("field");
+
+            run(showGUI, useField);
+        } catch (ParseException e) {
+            System.out.println(e.getMessage());
+            formatter.printHelp("MAS-project", options);
+
+            System.exit(1);
+        }
     }
 
     /**
@@ -67,14 +85,14 @@ public final class MasProject {
      *
      * @return The simulator instance.
      */
-    public static Simulator run() {
+    public static void run(boolean showGUI, boolean useField) {
+        DiscreteField discreteField = null;
+        if (useField) {
+            FieldGenerator fieldGenerator = new FieldGenerator();
+            discreteField = fieldGenerator.load();
+        }
 
-        FieldGenerator fieldGenerator = new FieldGenerator();
-        DiscreteField discreteField = fieldGenerator.load();
-
-        final View.Builder view = createGui(discreteField);
-
-        final Simulator simulator = Simulator.builder()
+        Simulator.Builder simulatorBuilder = Simulator.builder()
                 .addModel(RoadModelBuilders.plane()
                         .withMinPoint(Helper.convertToPointInBoundaries(Helper.ROADMODEL_MIN_POINT))
                         .withMaxPoint(Helper.convertToPointInBoundaries(Helper.ROADMODEL_MAX_POINT))
@@ -82,11 +100,13 @@ public final class MasProject {
                 )
                 .addModel(CommModel.builder())
                 .addModel(DefaultPDPModel.builder())
-                .addModel(view)
                 .addModel(StatsTracker.builder())
                 .setTimeUnit(SI.MILLI(SI.SECOND))
-                .setTickLength(1000L)
-                .build();
+                .setTickLength(1000L);
+
+        if (showGUI) simulatorBuilder.addModel(createGui(discreteField));
+
+        final Simulator simulator = simulatorBuilder.build();
 
         final RandomGenerator rng = simulator.getRandomGenerator();
 
@@ -133,17 +153,20 @@ public final class MasProject {
 
         // simulation is done, lets print the statistics!
         System.out.println(simulator.getModelProvider().getModel(StatsTracker.class).getStatistics());
-
-        return simulator;
     }
 
     static View.Builder createGui(DiscreteField df) {
-        return View.builder()
+        View.Builder builder = View.builder();
+
+        if (df != null) {
+            builder = builder.with(DiscreteFieldRenderer.builder()
+                    .withField(df)
+            );
+        }
+
+        builder = builder
                 .withSpeedUp(SPEED_UP)
                 .with(PlaneRoadModelRenderer.builder())
-                .with(DiscreteFieldRenderer.builder()
-                        .withField(df)
-                )
                 .with(StatsPanel.builder())
 //                .with(CommRenderer.builder().withReliabilityColors())
                 .with(RoadUserRenderer.builder()
@@ -158,5 +181,6 @@ public final class MasProject {
                 .withFullScreen()
                 .withAutoPlay()
                 .withAutoClose();
+        return builder;
     }
 }

@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class DiscreteField {
-    private static double CAPACITY_WEIGHT = 0.3;
+    private static double CAPACITY_WEIGHT = 0.5;
     private double[][][] fieldData;
     private double[] maxFieldValues;
     private int tDim;
