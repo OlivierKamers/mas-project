@@ -23,6 +23,7 @@ import com.github.rinde.rinsim.core.model.pdp.PDPModel;
 import com.github.rinde.rinsim.core.model.pdp.Parcel;
 import com.github.rinde.rinsim.core.model.pdp.Vehicle;
 import com.github.rinde.rinsim.core.model.pdp.VehicleDTO;
+import com.github.rinde.rinsim.core.model.road.MoveProgress;
 import com.github.rinde.rinsim.core.model.road.RoadModel;
 import com.github.rinde.rinsim.core.model.time.TimeLapse;
 import com.github.rinde.rinsim.geom.Point;
@@ -33,6 +34,7 @@ import org.apache.commons.math3.geometry.euclidean.twod.Vector2D;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.stream.IntStream;
 
 /**
@@ -57,6 +59,7 @@ public class Taxi extends Vehicle implements CommUser {
     private Optional<CommDevice> commDevice;
     private TaxiState state;
     private DiscreteField df;
+    private HashMap<Long, MoveProgress> idleMoveProgress;
 
     Taxi(int id, Point startPosition, int capacity, DiscreteField df) {
         super(VehicleDTO.builder()
@@ -66,11 +69,16 @@ public class Taxi extends Vehicle implements CommUser {
                 .build());
         this.currentCustomers = new ArrayList<>();
         this.pickedUpCustomers = new ArrayList<>();
+        this.idleMoveProgress = new HashMap<>();
         this.route = new ArrayList<>();
         this.id = id;
         this.df = df;
         this.fieldVector = new Vector2D(0, 0);
         setState(TaxiState.IDLE);
+    }
+
+    public HashMap<Long, MoveProgress> getIdleMoveProgress() {
+        return idleMoveProgress;
     }
 
     public int getId() {
@@ -144,7 +152,8 @@ public class Taxi extends Vehicle implements CommUser {
                     Math.max(0, Math.min(rm.getBounds().get(1).x, getPosition().get().x + fieldVector.getX())),
                     Math.max(0, Math.min(rm.getBounds().get(1).y, getPosition().get().y + fieldVector.getY()))
             );
-            rm.moveTo(this, targetPoint, time);
+            MoveProgress moveProgress = rm.moveTo(this, targetPoint, time);
+            idleMoveProgress.put(time.getStartTime(), moveProgress);
         }
         // Broadcast position message
         sendPositionMessage();
