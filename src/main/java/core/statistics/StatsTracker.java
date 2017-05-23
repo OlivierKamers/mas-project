@@ -156,7 +156,7 @@ public final class StatsTracker extends AbstractModelVoid {
         int totalVehicles;
         double totalDistance;
         int totalPickups;
-        int totalRequestsBeforePickup;
+        ArrayList<Integer> totalRequestsBeforePickup;
         int totalDeliveries;
         ArrayList<Long> pickupWaitingTimes;
         float travelOverhead;
@@ -181,6 +181,7 @@ public final class StatsTracker extends AbstractModelVoid {
             totalPickups = 0;
             totalDeliveries = 0;
             pickupWaitingTimes = new ArrayList<>();
+            totalRequestsBeforePickup = new ArrayList<>();
             travelOverhead = 0;
 
             simFinish = false;
@@ -217,7 +218,7 @@ public final class StatsTracker extends AbstractModelVoid {
                 final Customer customer = (Customer) pme.parcel;
                 assert customer != null;
 
-                totalRequestsBeforePickup += customer.getNumberOfSentRequests();
+                totalRequestsBeforePickup.add(customer.getNumberOfSentRequests());
                 totalPickups++;
             } else if (e.getEventType() == PDPModelEventType.START_DELIVERY) {
                 // do nothing, delivery has only started

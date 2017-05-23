@@ -87,37 +87,20 @@ public class StatisticsDTO implements Serializable {
      * This is the time between the announcement of a parcel and the time it is picked up by an agent.
      */
     public final ArrayList<Long> pickupWaitingTimes;
-    /**
-     * The cumulative pickup waiting time of all parcels.
-     * This is the time between the announcement of a parcel and the time it is picked up by an agent.
-     */
-    public final long pickupWaitingTimeTotal;
-    /**
-     * The minimum pickup waiting time of all parcels.
-     */
+    public final long pickupWaitingTimeSum;
     public final long pickupWaitingTimeMin;
-    /**
-     * The maximum pickup waiting time of all parcels.
-     */
     public final long pickupWaitingTimeMax;
-    /**
-     * The maximum pickup waiting time of all parcels.
-     */
     public final long pickupWaitingTimeMedian;
-    /**
-     * The average pickup waiting time of all parcels.
-     * This is the {@link #pickupWaitingTimeTotal} divided by the {@link #totalDeliveries}.
-     */
     public final long pickupWaitingTimeAvg;
     /**
      * The total number of contract requests sent by parcels that have been picked up.
      */
-    public final int numberOfRequests;
-    /**
-     * The average number of contract requests sent per parcel.
-     * This is the {@link #numberOfRequests} divided by the {@link #totalDeliveries}.
-     */
-    public final float numberOfRequestsAverage;
+    public final ArrayList<Integer> numberOfRequests;
+    public final int numberOfRequestsSum;
+    public final int numberOfRequestsMin;
+    public final int numberOfRequestsMax;
+    public final int numberOfRequestsMedian;
+    public final float numberOfRequestsAvg;
     /**
      * The cumulative travel time overhead of all parcels.
      * This is the actual time it took to go from its pickup location to its delivery location
@@ -159,7 +142,7 @@ public class StatisticsDTO implements Serializable {
      * @param del       {@link #totalDeliveries}.
      * @param parc      {@link #totalParcels}.
      * @param accP      {@link #acceptedParcels}.
-     * @param pickWT    {@link #pickupWaitingTimeTotal}.
+     * @param pickWT    {@link #pickupWaitingTimeSum}.
      * @param req       {@link #numberOfRequests}.
      * @param travelTOh {@link #travelTimeOverhead}.
      * @param compT     {@link #computationTime}.
@@ -172,7 +155,7 @@ public class StatisticsDTO implements Serializable {
      * @param speed     {@link #speedUnit}.
      */
     public StatisticsDTO(double dist, int pick, int del, int parc, int accP,
-                         ArrayList<Long> pickWT, int req, float travelTOh, long compT, long simT, boolean finish,
+                         ArrayList<Long> pickWT, ArrayList<Integer> req, float travelTOh, long compT, long simT, boolean finish,
                          int totalVeh, int moved, Unit<Duration> time,
                          Unit<Length> distUnit, Unit<Velocity> speed) {
         totalDistance = dist;
@@ -181,13 +164,17 @@ public class StatisticsDTO implements Serializable {
         totalParcels = parc;
         acceptedParcels = accP;
         pickupWaitingTimes = pickWT;
-        pickupWaitingTimeTotal = !pickWT.isEmpty() ? pickWT.stream().mapToLong(Long::longValue).sum() : 0;
+        pickupWaitingTimeSum = !pickWT.isEmpty() ? pickWT.stream().mapToLong(Long::longValue).sum() : 0;
         pickupWaitingTimeMin = !pickWT.isEmpty() ? pickWT.stream().mapToLong(Long::longValue).min().getAsLong() : 0;
         pickupWaitingTimeMax = !pickWT.isEmpty() ? pickWT.stream().mapToLong(Long::longValue).max().getAsLong() : 0;
         pickupWaitingTimeMedian = !pickWT.isEmpty() ? pickWT.get(pickWT.size() / 2) : 0L;
-        pickupWaitingTimeAvg = (totalDeliveries > 0) ? pickupWaitingTimeTotal / totalDeliveries : 0;
+        pickupWaitingTimeAvg = (totalDeliveries > 0) ? pickupWaitingTimeSum / totalDeliveries : 0;
         numberOfRequests = req;
-        numberOfRequestsAverage = (totalPickups > 0) ? 1f * numberOfRequests / totalPickups : 0;
+        numberOfRequestsSum = !req.isEmpty() ? req.stream().mapToInt(Integer::intValue).sum() : 0;
+        numberOfRequestsMin = !req.isEmpty() ? req.stream().mapToInt(Integer::intValue).min().getAsInt() : 0;
+        numberOfRequestsMax = !req.isEmpty() ? req.stream().mapToInt(Integer::intValue).max().getAsInt() : 0;
+        numberOfRequestsMedian = !req.isEmpty() ? req.get(req.size() / 2) : 0;
+        numberOfRequestsAvg = (totalPickups > 0) ? 1f * numberOfRequestsSum / totalPickups : 0;
         travelTimeOverhead = travelTOh;
         travelTimeOverheadAvg = (totalDeliveries > 0) ? travelTimeOverhead / totalDeliveries : 0;
         computationTime = compT;
@@ -223,7 +210,7 @@ public class StatisticsDTO implements Serializable {
                 .append(totalDeliveries, other.totalDeliveries)
                 .append(totalParcels, other.totalParcels)
                 .append(acceptedParcels, other.acceptedParcels)
-                .append(pickupWaitingTimeTotal, other.pickupTardiness)
+                .append(pickupWaitingTimeSum, other.pickupTardiness)
                 .append(travelTimeOverhead, other.deliveryTardiness)
                 .append(simulationTime, other.simulationTime)
                 .append(simFinish, other.simFinish)
@@ -234,7 +221,7 @@ public class StatisticsDTO implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hashCode(totalDistance, totalPickups, totalParcels,
-                acceptedParcels, pickupWaitingTimeTotal, travelTimeOverhead, simulationTime,
+                acceptedParcels, pickupWaitingTimeSum, travelTimeOverhead, simulationTime,
                 simFinish, totalVehicles, movedVehicles);
     }
 

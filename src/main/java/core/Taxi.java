@@ -33,6 +33,7 @@ import org.apache.commons.math3.geometry.euclidean.twod.Vector2D;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.stream.IntStream;
 
 /**
  * Implementation of a Taxi agent.
@@ -173,20 +174,22 @@ public class Taxi extends Vehicle implements CommUser {
     }
 
     private void handleDeals(ImmutableList<Message> messages) {
+        double freeCapacity = getFreeCapacity();
         java.util.Optional<ContractDeal> deal = messages.stream()
                 .filter(m -> m.getContents() instanceof ContractDeal)
                 .map(msg -> (ContractDeal) msg.getContents())
-                .filter(m -> getFreeCapacity() >= m.getCustomer().getNeededCapacity())
+                .filter(m -> m.getCustomer().getNeededCapacity() <= freeCapacity)
                 .sorted(Comparator.comparingDouble(ContractDeal::getBid).reversed())
                 .findFirst();
         deal.ifPresent(this::acceptDeal);
     }
 
     private void handleBids(ImmutableList<Message> messages) {
+        double freeCapacity = getFreeCapacity();
         messages.stream()
                 .filter(m -> m.getContents() instanceof ContractRequest)
                 .map(m -> (ContractRequest) m.getContents())
-                .filter(m -> getFreeCapacity() >= m.getCustomer().getNeededCapacity())
+                .filter(m -> m.getCustomer().getNeededCapacity() <= freeCapacity)
                 .forEach(this::sendBid);
     }
 
@@ -295,15 +298,19 @@ public class Taxi extends Vehicle implements CommUser {
         return returnValue;
     }
 
+    /**
+     * Calculate the length of the given route.
+     */
     private double routeLength(ArrayList<Point> route) {
         if (route.isEmpty())
             return 0;
         double distance = Point.distance(getPosition().get(), route.get(0));
         if (route.size() == 1)
             return distance;
-        for (int i = 1; i < route.size(); i++) {
-            distance += Point.distance(route.get(i), route.get(i - 1));
-        }
+        distance += IntStream
+                .range(0, route.size() - 1)
+                .mapToDouble(i -> Point.distance(route.get(i), route.get(i + 1)))
+                .sum();
         return distance;
     }
 
