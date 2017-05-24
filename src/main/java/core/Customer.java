@@ -48,6 +48,7 @@ public class Customer extends Parcel implements CommUser, TickListener {
         this.ticksSinceSentDeal = 0;
         this.ticksSinceCreate = 0;
         this.numberOfSentRequests = 0;
+        this.pickupTime = 0;
     }
 
     Customer(HistoricalData data, TimeLapse time) {

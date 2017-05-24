@@ -35,7 +35,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -66,7 +65,7 @@ public class Taxi extends Vehicle implements CommUser {
     private Optional<CommDevice> commDevice;
     private TaxiState state;
     private DiscreteField df;
-    private HashMap<Long, MoveProgress> idleMoveProgress;
+    private ArrayList<MoveProgress> idleMoveProgress;
     private int ticksSinceTradeDeal;
     private double dealCapacity;
     private boolean useTrading;
@@ -79,7 +78,7 @@ public class Taxi extends Vehicle implements CommUser {
                 .build());
         this.currentCustomers = new ArrayList<>();
         this.pickedUpCustomers = new ArrayList<>();
-        this.idleMoveProgress = new HashMap<>();
+        this.idleMoveProgress = new ArrayList<>();
         this.route = new ArrayList<>();
         this.remainingRouteLength = 0;
         this.id = id;
@@ -91,7 +90,7 @@ public class Taxi extends Vehicle implements CommUser {
         this.useTrading = useTrading;
     }
 
-    public HashMap<Long, MoveProgress> getIdleMoveProgress() {
+    public ArrayList<MoveProgress> getIdleMoveProgress() {
         return idleMoveProgress;
     }
 
@@ -173,7 +172,7 @@ public class Taxi extends Vehicle implements CommUser {
                     Math.max(0, Math.min(rm.getBounds().get(1).y, getPosition().get().y + fieldVector.getY()))
             );
             MoveProgress moveProgress = rm.moveTo(this, targetPoint, time);
-            idleMoveProgress.put(time.getStartTime(), moveProgress);
+            idleMoveProgress.add(moveProgress);
         }
         // Broadcast position message
         sendPositionMessage();

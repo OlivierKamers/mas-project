@@ -29,11 +29,14 @@ import core.statistics.StatsPanel;
 import core.statistics.StatsTracker;
 import org.apache.commons.cli.*;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import javax.measure.unit.SI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 /**
  * MAS Project 2017
@@ -122,10 +125,15 @@ public final class MasProject {
 
         MySQLDataLoader dataLoader = new MySQLDataLoader();
 
+
+        ArrayList<Integer> amountOfIdleTaxis = new ArrayList<>();
+        ArrayList<Integer> amountOfWaitingCustomers = new ArrayList<>();
+
         simulator.addTickListener(new TickListener() {
             @Override
-            public void tick(TimeLapse time) {
-//                System.out.println(Helper.START_TIME.plusNanos(time.getEndTime() * 1000000));
+            public void tick(@NotNull TimeLapse time) {
+                amountOfIdleTaxis.add((int) roadModel.getObjectsOfType(Taxi.class).stream().filter(t -> t.getState() == Taxi.TaxiState.IDLE).count());
+                amountOfWaitingCustomers.add((int) roadModel.getObjectsOfType(Customer.class).stream().filter(c -> c.getPickupTime() > 0).count());
 
                 if (Helper.START_TIME.plusNanos(time.getEndTime() * 1000000).isAfter(Helper.STOP_TIME)) {
                     if (roadModel.getObjectsOfType(Customer.class).isEmpty() &&
@@ -156,6 +164,17 @@ public final class MasProject {
 
         // simulation is done, lets print the statistics!
         StatisticsDTO stats = simulator.getModelProvider().getModel(StatsTracker.class).getStatistics();
+        stats.setAmountOfIdleTaxis(amountOfIdleTaxis);
+        stats.setAmountOfWaitingCustomers(amountOfWaitingCustomers);
+        List<Double> totalIdleMovements = roadModel.getObjectsOfType(Taxi.class)
+                .stream()
+                .map(Taxi::getIdleMoveProgress)
+                .map(l -> l
+                        .stream()
+                        .mapToDouble(mp -> mp.distance().getValue())
+                        .sum())
+                .collect(Collectors.toList());
+        stats.setTotalIdleMovement(totalIdleMovements);
         System.out.println(stats);
         stats.save();
     }

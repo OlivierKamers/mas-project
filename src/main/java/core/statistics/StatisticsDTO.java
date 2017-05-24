@@ -14,6 +14,7 @@ import java.io.*;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 /*
  * Copyright (C) 2011-2016 Rinde van Lon, iMinds-DistriNet, KU Leuven
@@ -133,6 +134,9 @@ public class StatisticsDTO implements Serializable {
      * Number of vehicles that have been used, 'used' means has moved.
      */
     public final int movedVehicles;
+    public ArrayList<Integer> amountOfIdleTaxis;
+    public ArrayList<Integer> amountOfWaitingCustomers;
+    public List<Double> totalIdleMovement;
 
     /**
      * Create a new statistics object.
@@ -182,9 +186,24 @@ public class StatisticsDTO implements Serializable {
         simFinish = finish;
         totalVehicles = totalVeh;
         movedVehicles = moved;
+        amountOfIdleTaxis = new ArrayList<>();
+        amountOfWaitingCustomers = new ArrayList<>();
+        totalIdleMovement = new ArrayList<>();
         timeUnit = time;
         distanceUnit = distUnit;
         speedUnit = speed;
+    }
+
+    public void setAmountOfIdleTaxis(ArrayList<Integer> amountOfIdleTaxis) {
+        this.amountOfIdleTaxis = amountOfIdleTaxis;
+    }
+
+    public void setAmountOfWaitingCustomers(ArrayList<Integer> amountOfWaitingCustomers) {
+        this.amountOfWaitingCustomers = amountOfWaitingCustomers;
+    }
+
+    public void setTotalIdleMovement(List<Double> totalIdleMovement) {
+        this.totalIdleMovement = totalIdleMovement;
     }
 
     @Override
