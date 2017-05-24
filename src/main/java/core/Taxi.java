@@ -391,11 +391,10 @@ public class Taxi extends Vehicle implements CommUser {
                 .findFirst()
                 .ifPresent(tradeDeal -> {
                     if (currentCustomers.contains(tradeDeal.getCustomer()) && !pickedUpCustomers.contains(tradeDeal.getCustomer())) {
-//                    System.out.println(tradeDeal.getProfit());
                         TradeAccept tradeAccept = new TradeAccept(tradeDeal.getCustomer());
 //                        System.out.println("Sending trade accept " + tradeAccept.toString() + " for deal " + tradeDeal.toString());
                         commDevice.get().send(tradeAccept, tradeDeal.getTaxi());
-                        boolean e = currentCustomers.remove(tradeDeal.getCustomer());
+                        currentCustomers.remove(tradeDeal.getCustomer());
                         sortRoute();
                     }
                 });
