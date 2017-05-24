@@ -31,7 +31,6 @@ public class Customer extends Parcel implements CommUser, TickListener {
     private static final int MAX_TICKS_TO_WAIT_FOR_ACCEPT = 3;
     private static final int MAX_TICKS_TO_WAIT_FOR_BID = 5;
 
-
     private long pickupTime;
 
     private long id;

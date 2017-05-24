@@ -42,7 +42,7 @@ import java.util.Random;
  */
 public final class MasProject {
     public static final double MAX_SPEED = 15;
-    public static final int TAXI_CAPACITY = 5;
+    static final int TAXI_CAPACITY = 5;
     private static final int NUM_TAXIS = 10000;
     private static final int SPEED_UP = 5;
     private static final double DEFAULT_SAMPLE = 0.05;

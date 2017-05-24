@@ -31,6 +31,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import core.messages.*;
 import org.apache.commons.math3.geometry.euclidean.twod.Vector2D;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -47,8 +48,8 @@ import java.util.stream.IntStream;
  * @author Evert Etienne & Olivier Kamers
  */
 public class Taxi extends Vehicle implements CommUser {
-    public static final int TRADE_DEAL_WAIT_TICKS = 1;
     static final double FIELD_INFLUENCE_RANGE = 0.5;
+    private static final int TRADE_DEAL_WAIT_TICKS = 2;
     private static final double TRADE_RANGE_MIN = 2;
     private static final double TRADE_RANGE_MAX = 2.5;
     private static final double COMMUNICATION_RANGE = Helper.ROADMODEL_BOUNDARIES_SCALE;
@@ -120,6 +121,10 @@ public class Taxi extends Vehicle implements CommUser {
         }
 
         ticksSinceTradeDeal++;
+
+        if (ticksSinceTradeDeal > TRADE_DEAL_WAIT_TICKS) {
+            dealCapacity = 0;
+        }
 
         ImmutableList<Message> messages = commDevice.get().getUnreadMessages();
 
@@ -193,9 +198,6 @@ public class Taxi extends Vehicle implements CommUser {
             return 0;
         }
 
-        if (ticksSinceTradeDeal > TRADE_DEAL_WAIT_TICKS) {
-            dealCapacity = 0;
-        }
         return getCapacity() - currentCustomers.stream().mapToDouble(Parcel::getNeededCapacity).sum() - dealCapacity;
     }
 
@@ -267,15 +269,16 @@ public class Taxi extends Vehicle implements CommUser {
      * Generate the shortest route for this taxi taking into account its current customers.
      */
     private void sortRoute() {
-        if (!currentCustomers.isEmpty()) {
-            route = getShortestRoute(currentCustomers);
-        }
+        route = getShortestRoute(currentCustomers);
     }
 
     /**
      * Find the shortest route for the given list of customers.
      */
     private ArrayList<Point> getShortestRoute(List<Customer> customers) {
+        if (customers.isEmpty()) {
+            return new ArrayList<>();
+        }
         ArrayList<ArrayList<Point>> allPermutations = generatePermutations(new ArrayList<>(customers));
         return allPermutations.stream().sorted(Comparator.comparingDouble(this::routeLength)).findFirst().get();
     }
@@ -363,16 +366,13 @@ public class Taxi extends Vehicle implements CommUser {
      * Handle an accepted trade: add the customer to the current customers and update route.
      */
     private void handleTradeAccept(ImmutableList<Message> messages) {
-//        assert messages.stream()
-//                .filter(m -> m.getSender() instanceof Taxi && m.getContents() instanceof TradeAccept)
-//                .collect(Collectors.toList()).size() <= 1;
-
         messages.stream()
                 .filter(m -> m.getContents() instanceof TradeAccept)
                 .map(m -> (TradeAccept) m.getContents())
                 .findFirst()
                 .ifPresent(ta -> {
                     currentCustomers.add(ta.getCustomer());
+                    dealCapacity = 0;
 //                    System.out.println(toString() + " handled accept for customer " + ta.getCustomer());
                     sortRoute();
                     setState(TaxiState.BUSY);
@@ -390,10 +390,14 @@ public class Taxi extends Vehicle implements CommUser {
                 .sorted(Comparator.comparingDouble(TradeDeal::getProfit).reversed())
                 .findFirst()
                 .ifPresent(tradeDeal -> {
-                    System.out.println(tradeDeal.getProfit());
-                    commDevice.get().send(new TradeAccept(tradeDeal.getCustomer()), tradeDeal.getTaxi());
-                    boolean e = currentCustomers.remove(tradeDeal.getCustomer());
-                    sortRoute();
+                    if (currentCustomers.contains(tradeDeal.getCustomer()) && !pickedUpCustomers.contains(tradeDeal.getCustomer())) {
+//                    System.out.println(tradeDeal.getProfit());
+                        TradeAccept tradeAccept = new TradeAccept(tradeDeal.getCustomer());
+//                        System.out.println("Sending trade accept " + tradeAccept.toString() + " for deal " + tradeDeal.toString());
+                        commDevice.get().send(tradeAccept, tradeDeal.getTaxi());
+                        boolean e = currentCustomers.remove(tradeDeal.getCustomer());
+                        sortRoute();
+                    }
                 });
     }
 
@@ -421,7 +425,7 @@ public class Taxi extends Vehicle implements CommUser {
 
         if (bestRequest != null) {
             TradeDeal tradeDeal = new TradeDeal(bestProfit, this, bestRequest.getCustomer());
-//            System.out.println(toString() + " Sending trade deal " + tradeDeal);
+//            System.out.println(toString() + " Sending trade deal " + tradeDeal + " to " + bestRequest.getTaxi());
             commDevice.get().send(tradeDeal, bestRequest.getTaxi());
             ticksSinceTradeDeal = 0;
             dealCapacity = bestRequest.getCustomer().getNeededCapacity();
@@ -431,14 +435,7 @@ public class Taxi extends Vehicle implements CommUser {
     private double calculateProfit(TradeRequest tradeRequest) {
         ArrayList<Customer> customersWithTradedCustomer = new ArrayList<>(currentCustomers);
         customersWithTradedCustomer.add(tradeRequest.getCustomer());
-        double v = routeLength(getShortestRoute(customersWithTradedCustomer));
-        double extraCost = v - remainingRouteLength;
-//        if (tradeRequest.getRouteReduction() - extraCost > 0) {
-//            System.out.println("--");
-//            System.out.println(v);
-//            System.out.println(extraCost);
-//            System.out.println(tradeRequest.getRouteReduction() - extraCost);
-//        }
+        double extraCost = routeLength(getShortestRoute(customersWithTradedCustomer)) - remainingRouteLength;
         return tradeRequest.getRouteReduction() - extraCost;
     }
 
@@ -489,7 +486,7 @@ public class Taxi extends Vehicle implements CommUser {
     }
 
     @Override
-    public void setCommDevice(CommDeviceBuilder builder) {
+    public void setCommDevice(@NotNull CommDeviceBuilder builder) {
         commDevice = Optional.of(builder
                 .setReliability(1)
                 .setMaxRange(COMMUNICATION_RANGE)
