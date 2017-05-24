@@ -47,8 +47,10 @@ import java.util.stream.IntStream;
  * @author Evert Etienne & Olivier Kamers
  */
 public class Taxi extends Vehicle implements CommUser {
+    public static final int TRADE_DEAL_WAIT_TICKS = 1;
     static final double FIELD_INFLUENCE_RANGE = 0.5;
-    private static final double TRADE_RANGE = 2;
+    private static final double TRADE_RANGE_MIN = 2;
+    private static final double TRADE_RANGE_MAX = 2.5;
     private static final double COMMUNICATION_RANGE = Helper.ROADMODEL_BOUNDARIES_SCALE;
     private static final double SPEED = 1000d;
     private static final int FIELD_RANGE = 5;
@@ -64,8 +66,11 @@ public class Taxi extends Vehicle implements CommUser {
     private TaxiState state;
     private DiscreteField df;
     private HashMap<Long, MoveProgress> idleMoveProgress;
+    private int ticksSinceTradeDeal;
+    private double dealCapacity;
+    private boolean useTrading;
 
-    Taxi(int id, Point startPosition, int capacity, DiscreteField df) {
+    Taxi(int id, Point startPosition, int capacity, DiscreteField df, boolean useTrading) {
         super(VehicleDTO.builder()
                 .capacity(capacity)
                 .startPosition(startPosition)
@@ -80,6 +85,9 @@ public class Taxi extends Vehicle implements CommUser {
         this.df = df;
         this.fieldVector = new Vector2D(0, 0);
         setState(TaxiState.IDLE);
+        this.ticksSinceTradeDeal = TRADE_DEAL_WAIT_TICKS;
+        this.dealCapacity = 0;
+        this.useTrading = useTrading;
     }
 
     public HashMap<Long, MoveProgress> getIdleMoveProgress() {
@@ -111,14 +119,14 @@ public class Taxi extends Vehicle implements CommUser {
             return;
         }
 
+        ticksSinceTradeDeal++;
+
         ImmutableList<Message> messages = commDevice.get().getUnreadMessages();
 
         // Handle the contract net (deals, pickup, delivery) if needed
         if (shouldHandleContractNet()) {
             handleContractNet(messages);
         }
-
-        remainingRouteLength = routeLength(route);
 
         // Taxi has not finished its route yet
         if (!route.isEmpty()) {
@@ -165,7 +173,8 @@ public class Taxi extends Vehicle implements CommUser {
         // Broadcast position message
         sendPositionMessage();
         // Do trading if needed
-        trade(messages);
+        if (useTrading)
+            trade(messages);
     }
 
     private void sendPositionMessage() {
@@ -183,7 +192,11 @@ public class Taxi extends Vehicle implements CommUser {
         if (currentCustomers.size() >= MAX_CONCURRENT_PICKUPS) {
             return 0;
         }
-        return getCapacity() - currentCustomers.stream().mapToDouble(Parcel::getNeededCapacity).sum();
+
+        if (ticksSinceTradeDeal > TRADE_DEAL_WAIT_TICKS) {
+            dealCapacity = 0;
+        }
+        return getCapacity() - currentCustomers.stream().mapToDouble(Parcel::getNeededCapacity).sum() - dealCapacity;
     }
 
     private void handleContractNet(ImmutableList<Message> messages) {
@@ -256,7 +269,6 @@ public class Taxi extends Vehicle implements CommUser {
     private void sortRoute() {
         if (!currentCustomers.isEmpty()) {
             route = getShortestRoute(currentCustomers);
-            remainingRouteLength = routeLength(route);
         }
     }
 
@@ -339,23 +351,32 @@ public class Taxi extends Vehicle implements CommUser {
     private void trade(ImmutableList<Message> messages) {
         handleTradeAccept(messages);
         handleTradeDeals(messages);
-        handleTradeRequests(messages);
+
+        remainingRouteLength = routeLength(route);
+
+        if (ticksSinceTradeDeal > TRADE_DEAL_WAIT_TICKS)
+            handleTradeRequests(messages);
         sendTradeRequest(messages);
     }
 
     /**
      * Handle an accepted trade: add the customer to the current customers and update route.
-     * TODO: enforce that there should be only 1 accept? Should not occur, but if it does we can not fix it because the other taxi already removed the customer.
      */
     private void handleTradeAccept(ImmutableList<Message> messages) {
+//        assert messages.stream()
+//                .filter(m -> m.getSender() instanceof Taxi && m.getContents() instanceof TradeAccept)
+//                .collect(Collectors.toList()).size() <= 1;
+
         messages.stream()
-                .filter(m -> m.getSender() instanceof Taxi && m.getContents() instanceof TradeAccept)
+                .filter(m -> m.getContents() instanceof TradeAccept)
                 .map(m -> (TradeAccept) m.getContents())
-                .forEach(ta -> {
+                .findFirst()
+                .ifPresent(ta -> {
                     currentCustomers.add(ta.getCustomer());
-                    System.out.println(toString() + " handled accept for customer " + ta.getCustomer());
+//                    System.out.println(toString() + " handled accept for customer " + ta.getCustomer());
+                    sortRoute();
+                    setState(TaxiState.BUSY);
                 });
-        sortRoute();
     }
 
     /**
@@ -363,15 +384,17 @@ public class Taxi extends Vehicle implements CommUser {
      * Find the deal with the highest profit, remove the traded customer and send an accept.
      */
     private void handleTradeDeals(ImmutableList<Message> messages) {
-        java.util.Optional<TradeDeal> bestDeal = messages.stream()
-                .filter(m -> m.getSender() instanceof Taxi && m.getContents() instanceof TradeDeal)
+        messages.stream()
+                .filter(m -> m.getContents() instanceof TradeDeal)
                 .map(m -> (TradeDeal) m.getContents())
-                .sorted(Comparator.comparingDouble(TradeDeal::getProfit).reversed()).findFirst();
-        bestDeal.ifPresent(tradeDeal -> {
-            commDevice.get().send(new TradeAccept(tradeDeal.getCustomer()), tradeDeal.getTaxi());
-            currentCustomers.remove(tradeDeal.getCustomer());
-            sortRoute();
-        });
+                .sorted(Comparator.comparingDouble(TradeDeal::getProfit).reversed())
+                .findFirst()
+                .ifPresent(tradeDeal -> {
+                    System.out.println(tradeDeal.getProfit());
+                    commDevice.get().send(new TradeAccept(tradeDeal.getCustomer()), tradeDeal.getTaxi());
+                    boolean e = currentCustomers.remove(tradeDeal.getCustomer());
+                    sortRoute();
+                });
     }
 
     /**
@@ -379,30 +402,43 @@ public class Taxi extends Vehicle implements CommUser {
      * The taxi can send only 1 trade deal every tick.
      */
     private void handleTradeRequests(ImmutableList<Message> messages) {
+        double freeCapacity = getFreeCapacity();
         List<TradeRequest> tradeRequests = messages.stream()
-                .filter(m -> m.getSender() instanceof Taxi && m.getContents() instanceof TradeRequest)
+                .filter(m -> m.getContents() instanceof TradeRequest)
                 .map(m -> (TradeRequest) m.getContents())
+                .filter(tr -> tr.getCustomer().getNeededCapacity() <= freeCapacity)
                 .collect(Collectors.toList());
+
         TradeRequest bestRequest = null;
         double bestProfit = 0;
         for (TradeRequest tradeRequest : tradeRequests) {
             double profit = calculateProfit(tradeRequest);
-            if (profit > 0 && profit > bestProfit) {
+            if (profit > bestProfit) {
                 bestRequest = tradeRequest;
                 bestProfit = profit;
             }
         }
+
         if (bestRequest != null) {
             TradeDeal tradeDeal = new TradeDeal(bestProfit, this, bestRequest.getCustomer());
-            System.out.println(toString() + " Sending trade deal " + tradeDeal);
+//            System.out.println(toString() + " Sending trade deal " + tradeDeal);
             commDevice.get().send(tradeDeal, bestRequest.getTaxi());
+            ticksSinceTradeDeal = 0;
+            dealCapacity = bestRequest.getCustomer().getNeededCapacity();
         }
     }
 
     private double calculateProfit(TradeRequest tradeRequest) {
-        ArrayList<Customer> customerWithTradedCustomer = new ArrayList<>(currentCustomers);
-        customerWithTradedCustomer.add(tradeRequest.getCustomer());
-        double extraCost = routeLength(getShortestRoute(customerWithTradedCustomer)) - remainingRouteLength;
+        ArrayList<Customer> customersWithTradedCustomer = new ArrayList<>(currentCustomers);
+        customersWithTradedCustomer.add(tradeRequest.getCustomer());
+        double v = routeLength(getShortestRoute(customersWithTradedCustomer));
+        double extraCost = v - remainingRouteLength;
+//        if (tradeRequest.getRouteReduction() - extraCost > 0) {
+//            System.out.println("--");
+//            System.out.println(v);
+//            System.out.println(extraCost);
+//            System.out.println(tradeRequest.getRouteReduction() - extraCost);
+//        }
         return tradeRequest.getRouteReduction() - extraCost;
     }
 
@@ -412,19 +448,39 @@ public class Taxi extends Vehicle implements CommUser {
     private void sendTradeRequest(ImmutableList<Message> messages) {
         List<Customer> pendingCustomers = currentCustomers.stream().filter(c -> !pickedUpCustomers.contains(c)).collect(Collectors.toList());
         if (pendingCustomers.isEmpty()) return;
-        Customer customerToTrade = pendingCustomers.get(pendingCustomers.size() - 1);
-        pendingCustomers.remove(customerToTrade);
-        double routeReduction = remainingRouteLength - routeLength(getShortestRoute(pendingCustomers));
-        messages.stream()
+
+        List<Taxi> possibleTaxis = messages.stream()
                 .filter(m -> m.getSender() instanceof Taxi && m.getContents() instanceof PositionBroadcast)
-                .filter(m ->
-                        Point.distance(getRoadModel().getPosition((Taxi) m.getSender()), getPosition().get()) <= TRADE_RANGE
-                                && ((PositionBroadcast) m.getContents()).getFreeCapacity() <= customerToTrade.getNeededCapacity())
-                .forEach(message -> {
-                    TradeRequest tradeRequest = new TradeRequest(this, customerToTrade, routeReduction);
-                    System.out.println(toString() + " Sending trade request " + tradeRequest);
-                    commDevice.get().send(tradeRequest, message.getSender());
-                });
+                .filter(m -> {
+                    double dist = Point.distance(getRoadModel().getPosition((Taxi) m.getSender()), getPosition().get());
+                    return dist < TRADE_RANGE_MAX && dist > TRADE_RANGE_MIN;
+                })
+                .map(m -> (Taxi) m.getSender())
+                .collect(Collectors.toList());
+        if (possibleTaxis.isEmpty()) return;
+
+        double bestReduction = 0;
+        Customer bestCustomer = null;
+        for (Customer customer : pendingCustomers) {
+            List<Customer> newCustomers = new ArrayList<>(pendingCustomers);
+            newCustomers.remove(customer);
+            double routeReduction = remainingRouteLength - routeLength(getShortestRoute(newCustomers));
+
+            if (routeReduction > bestReduction) {
+                bestReduction = routeReduction;
+                bestCustomer = customer;
+            }
+        }
+
+        if (bestCustomer != null) {
+            Customer finalBestCustomer = bestCustomer;
+            double finalBestReduction = bestReduction;
+            possibleTaxis.forEach(taxi -> {
+                TradeRequest tradeRequest = new TradeRequest(this, finalBestCustomer, finalBestReduction);
+//                System.out.println(toString() + " Sending trade request " + tradeRequest);
+                commDevice.get().send(tradeRequest, taxi);
+            });
+        }
     }
 
     @Override

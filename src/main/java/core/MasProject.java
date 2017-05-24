@@ -62,6 +62,7 @@ public final class MasProject {
 
         options.addOption(new Option("g", "gui", false, "Run with GUI"));
         options.addOption(new Option("f", "field", false, "Enable field"));
+        options.addOption(new Option("t", "trade", false, "Enable trading"));
         options.addOption(Option.builder("s").longOpt("sample").desc("Data sampling factor").hasArg().type(Number.class).build());
 
         CommandLineParser parser = new DefaultParser();
@@ -72,9 +73,10 @@ public final class MasProject {
             cmd = parser.parse(options, args);
             boolean showGUI = cmd.hasOption("gui");
             boolean useField = cmd.hasOption("field");
+            boolean useTrading = cmd.hasOption("trade");
             double sample = cmd.hasOption("sample") ? (double) cmd.getParsedOptionValue("sample") : DEFAULT_SAMPLE;
 
-            run(showGUI, useField, sample);
+            run(showGUI, useField, useTrading, sample);
         } catch (ParseException e) {
             System.out.println(e.getMessage());
             formatter.printHelp("MAS-project", options);
@@ -86,7 +88,7 @@ public final class MasProject {
     /**
      * Starts the project.
      */
-    public static void run(boolean showGUI, boolean useField, double sample) {
+    public static void run(boolean showGUI, boolean useField, boolean useTrading, double sample) {
         DiscreteField discreteField = null;
         if (useField) {
             FieldGenerator fieldGenerator = new FieldGenerator();
@@ -115,7 +117,7 @@ public final class MasProject {
 
         // Register random Taxis
         for (int i = 0; i < NUM_TAXIS * sample; i++) {
-            simulator.register(new Taxi(i, roadModel.getRandomPosition(rng), TAXI_CAPACITY, discreteField));
+            simulator.register(new Taxi(i, roadModel.getRandomPosition(rng), TAXI_CAPACITY, discreteField, useTrading));
         }
 
         MySQLDataLoader dataLoader = new MySQLDataLoader();
