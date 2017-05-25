@@ -13,6 +13,7 @@ import javax.measure.unit.Unit;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -130,6 +131,7 @@ public class StatisticsDTO implements Serializable {
     public ArrayList<Integer> amountOfWaitingCustomers;
     public List<Double> totalIdleMovement;
     public ArrayList<Double> tradeProfits;
+    public String args;
 
     /**
      * Create a new statistics object.
@@ -179,9 +181,14 @@ public class StatisticsDTO implements Serializable {
         amountOfWaitingCustomers = new ArrayList<>();
         totalIdleMovement = new ArrayList<>();
         tradeProfits = new ArrayList<>();
+        args = "";
         timeUnit = time;
         distanceUnit = distUnit;
         speedUnit = speed;
+    }
+
+    public void setArgs(String[] args) {
+        this.args = Arrays.toString(args);
     }
 
     public void setTradeProfits(ArrayList<Double> tradeProfits) {

@@ -89,7 +89,7 @@ public final class MasProject {
             int fieldRange = cmd.hasOption("frange") ? ((Number) cmd.getParsedOptionValue("frange")).intValue() : Taxi.DEFAULT_FIELD_RANGE;
             double idleTravelLimit = cmd.hasOption("idlelimit") ? (double) cmd.getParsedOptionValue("idlelimit") : Double.MAX_VALUE;
 
-            run(showGUI, useField, useTrading, sample, matrixStep, minPerFrame, taxiInfluenceRange, fieldRange, idleTravelLimit);
+            run(args, showGUI, useField, useTrading, sample, matrixStep, minPerFrame, taxiInfluenceRange, fieldRange, idleTravelLimit);
         } catch (ParseException e) {
             System.out.println(e.getMessage());
             formatter.printHelp("MAS-project", options);
@@ -101,7 +101,7 @@ public final class MasProject {
     /**
      * Starts the project.
      */
-    public static void run(boolean showGUI, boolean useField, boolean useTrading, double sample, int matrixStep, int minPerFrame, double taxiInfluenceRange, int fieldRange, double idleTravelLimit) {
+    public static void run(String[] args, boolean showGUI, boolean useField, boolean useTrading, double sample, int matrixStep, int minPerFrame, double taxiInfluenceRange, int fieldRange, double idleTravelLimit) {
         DiscreteField discreteField = null;
         if (useField) {
             FieldGenerator fieldGenerator = new FieldGenerator(matrixStep, minPerFrame);
@@ -190,6 +190,7 @@ public final class MasProject {
                 .map(Taxi::getTradeProfits)
                 .collect(ArrayList::new, ArrayList::addAll, ArrayList::addAll);
         stats.setTradeProfits(tradeProfits);
+        stats.setArgs(args);
         System.out.println(stats);
         stats.save();
     }
