@@ -133,7 +133,7 @@ public class StatisticsDTO implements Serializable {
     public ArrayList<Integer> amountOfWaitingCustomers;
     public List<Double> totalIdleMovement;
     public ArrayList<Double> tradeProfits;
-    public String args;
+    public String[] args;
 
     /**
      * Create a new statistics object.
@@ -183,14 +183,14 @@ public class StatisticsDTO implements Serializable {
         amountOfWaitingCustomers = new ArrayList<>();
         totalIdleMovement = new ArrayList<>();
         tradeProfits = new ArrayList<>();
-        args = "";
+        args = new String[]{};
         timeUnit = time.toString();
         distanceUnit = distUnit.toString();
         speedUnit = speed.toString();
     }
 
     public void setArgs(String[] args) {
-        this.args = Arrays.toString(args);
+        this.args = args;
     }
 
     public void setTradeProfits(ArrayList<Double> tradeProfits) {
