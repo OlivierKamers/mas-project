@@ -175,6 +175,7 @@ public class Taxi extends Vehicle implements CommUser {
                 }
             }
         }
+
         if (getState() == TaxiState.IDLE && df != null && idleTravelDistance < idleTravelLimit) {
             // Idle state: move according to the discrete field
             fieldVector = df.getNextPosition(this, time.getStartTime(), messages, fieldRange).add(FIELD_VECTOR_FACTOR, fieldVector);
@@ -408,6 +409,10 @@ public class Taxi extends Vehicle implements CommUser {
                         tradeProfits.add(tradeDeal.getProfit());
                         currentCustomers.remove(tradeDeal.getCustomer());
                         sortRoute();
+                        if (currentCustomers.isEmpty()) {
+                            setState(TaxiState.IDLE);
+                            idleTravelDistance = 0;
+                        }
                     }
                 });
     }
