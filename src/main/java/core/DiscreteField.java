@@ -13,20 +13,25 @@ import java.util.stream.Collectors;
 
 public class DiscreteField {
     private static double CAPACITY_WEIGHT = 0.5;
+    public static double DEFAULT_TAXI_INFLUENCE_RANGE = 0.5;
     private double[][][] fieldData;
     private double[] maxFieldValues;
     private int tDim;
     private int xDim;
     private int yDim;
     private Duration durationPerFrame;
+    private int matrixStep;
+    private double taxiInfluenceRange;
 
-    public DiscreteField(double[][][] data, double[] maxFieldValues, Duration durationPerFrame) {
+    public DiscreteField(double[][][] data, double[] maxFieldValues, Duration durationPerFrame, int matrixStep, double taxiInfluenceRange) {
         this.fieldData = data;
         this.maxFieldValues = maxFieldValues;
         this.tDim = fieldData.length;
         this.xDim = fieldData[0].length;
         this.yDim = fieldData[0][0].length;
         this.durationPerFrame = durationPerFrame;
+        this.matrixStep = matrixStep;
+        this.taxiInfluenceRange = taxiInfluenceRange;
     }
 
     public DiscreteField() {
@@ -36,6 +41,8 @@ public class DiscreteField {
         this.xDim = 0;
         this.yDim = 0;
         this.durationPerFrame = Duration.ofMillis(0);
+        this.matrixStep = 0;
+        this.taxiInfluenceRange = 0;
     }
 
     public static void printField(double[][] field) {
@@ -153,7 +160,7 @@ public class DiscreteField {
             vector = updateVectorWithPB(taxiPosition, vector, pb);
         }
 
-        for (int offset = 0; offset < FieldGenerator.MATRIX_STEP; offset++) {
+        for (int offset = 0; offset < matrixStep; offset++) {
             List<int[]> positions = new ArrayList<>();
             positions.addAll(getLeftCoords(offset, xPos, yPos));
             positions.addAll(getRightCoords(offset, xPos, yPos));
@@ -179,7 +186,7 @@ public class DiscreteField {
 
     private Vector2D updateVectorWithPB(Point taxiPosition, Vector2D vector, PositionBroadcast pb) {
         Vector2D diff = new Vector2D(pb.getPosition().x - taxiPosition.x, pb.getPosition().y - taxiPosition.y);
-        return vector.add(-1.0 * CAPACITY_WEIGHT * pb.getFreeCapacity() * (1 - Math.min(1, Point.distance(taxiPosition, pb.getPosition()) / Taxi.FIELD_INFLUENCE_RANGE)), diff);
+        return vector.add(-1.0 * CAPACITY_WEIGHT * pb.getFreeCapacity() * (1 - Math.min(1, Point.distance(taxiPosition, pb.getPosition()) / taxiInfluenceRange)), diff);
     }
 
     private Vector2D updateVectorWithField(Point taxiPosition, Vector2D vector, Point fieldPoint, double fieldValue) {
