@@ -133,7 +133,7 @@ public final class MasProject {
             @Override
             public void tick(@NotNull TimeLapse time) {
                 amountOfIdleTaxis.add((int) roadModel.getObjectsOfType(Taxi.class).stream().filter(t -> t.getState() == Taxi.TaxiState.IDLE).count());
-                amountOfWaitingCustomers.add((int) roadModel.getObjectsOfType(Customer.class).stream().filter(c -> c.getPickupTime() > 0).count());
+                amountOfWaitingCustomers.add(roadModel.getObjectsOfType(Customer.class).size());
 
                 if (Helper.START_TIME.plusNanos(time.getEndTime() * 1000000).isAfter(Helper.STOP_TIME)) {
                     if (roadModel.getObjectsOfType(Customer.class).isEmpty() &&

@@ -76,14 +76,6 @@ public class StatisticsDTO implements Serializable {
      */
     public final int totalDeliveries;
     /**
-     * The total number of parcels in the scenario.
-     */
-    public final int totalParcels;
-    /**
-     * The total number of parcels that were actually added in the model.
-     */
-    public final int acceptedParcels;
-    /**
      * The cumulative pickup waiting time of all parcels.
      * This is the time between the announcement of a parcel and the time it is picked up by an agent.
      */
@@ -144,8 +136,6 @@ public class StatisticsDTO implements Serializable {
      * @param dist      {@link #totalDistance}.
      * @param pick      {@link #totalPickups}.
      * @param del       {@link #totalDeliveries}.
-     * @param parc      {@link #totalParcels}.
-     * @param accP      {@link #acceptedParcels}.
      * @param pickWT    {@link #pickupWaitingTimeSum}.
      * @param req       {@link #numberOfRequests}.
      * @param travelTOh {@link #travelTimeOverhead}.
@@ -158,15 +148,13 @@ public class StatisticsDTO implements Serializable {
      * @param distUnit  {@link #distanceUnit}.
      * @param speed     {@link #speedUnit}.
      */
-    public StatisticsDTO(double dist, int pick, int del, int parc, int accP,
+    public StatisticsDTO(double dist, int pick, int del,
                          ArrayList<Long> pickWT, ArrayList<Integer> req, float travelTOh, long compT, long simT, boolean finish,
                          int totalVeh, int moved, Unit<Duration> time,
                          Unit<Length> distUnit, Unit<Velocity> speed) {
         totalDistance = dist;
         totalPickups = pick;
         totalDeliveries = del;
-        totalParcels = parc;
-        acceptedParcels = accP;
         pickupWaitingTimes = pickWT;
         pickupWaitingTimeSum = !pickWT.isEmpty() ? pickWT.stream().mapToLong(Long::longValue).sum() : 0;
         pickupWaitingTimeMin = !pickWT.isEmpty() ? pickWT.stream().mapToLong(Long::longValue).min().getAsLong() : 0;
@@ -227,8 +215,6 @@ public class StatisticsDTO implements Serializable {
         return new EqualsBuilder().append(totalDistance, other.totalDistance)
                 .append(totalPickups, other.totalPickups)
                 .append(totalDeliveries, other.totalDeliveries)
-                .append(totalParcels, other.totalParcels)
-                .append(acceptedParcels, other.acceptedParcels)
                 .append(pickupWaitingTimeSum, other.pickupTardiness)
                 .append(travelTimeOverhead, other.deliveryTardiness)
                 .append(simulationTime, other.simulationTime)
@@ -239,8 +225,8 @@ public class StatisticsDTO implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(totalDistance, totalPickups, totalParcels,
-                acceptedParcels, pickupWaitingTimeSum, travelTimeOverhead, simulationTime,
+        return Objects.hashCode(totalDistance, totalPickups,
+                pickupWaitingTimeSum, travelTimeOverhead, simulationTime,
                 simFinish, totalVehicles, movedVehicles);
     }
 

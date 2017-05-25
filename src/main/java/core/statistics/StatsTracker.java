@@ -102,7 +102,6 @@ public final class StatsTracker extends AbstractModelVoid {
         return new StatisticsDTO(
                 theListener.totalDistance,
                 theListener.totalPickups, theListener.totalDeliveries,
-                theListener.totalParcels, theListener.acceptedParcels,
                 theListener.pickupWaitingTimes, theListener.totalRequestsBeforePickup, theListener.travelOverhead, compTime,
                 clock.getCurrentTime(), theListener.simFinish,
                 theListener.totalVehicles, theListener.distanceMap.size(),
@@ -149,9 +148,6 @@ public final class StatsTracker extends AbstractModelVoid {
     class TheListener implements Listener {
 
         final Map<MovingRoadUser, Double> distanceMap;
-        // parcels
-        int totalParcels;
-        int acceptedParcels;
         // vehicles
         int totalVehicles;
         double totalDistance;
@@ -168,12 +164,8 @@ public final class StatsTracker extends AbstractModelVoid {
         long simulationTime;
 
         boolean simFinish;
-        long scenarioEndTime;
 
         TheListener() {
-            totalParcels = 0;
-            acceptedParcels = 0;
-
             totalVehicles = 0;
             distanceMap = newLinkedHashMap();
             totalDistance = 0d;
@@ -241,7 +233,6 @@ public final class StatsTracker extends AbstractModelVoid {
                 totalDeliveries++;
             } else if (e.getEventType() == NEW_PARCEL) {
                 // pdp model event
-                acceptedParcels++;
             } else if (e.getEventType() == NEW_VEHICLE) {
                 totalVehicles++;
             } else {
