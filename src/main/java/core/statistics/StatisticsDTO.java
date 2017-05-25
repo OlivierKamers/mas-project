@@ -1,6 +1,8 @@
 package core.statistics;
 
 import com.google.common.base.Objects;
+import com.google.gson.Gson;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -50,19 +52,19 @@ public class StatisticsDTO implements Serializable {
      * The time unit that is used in the simulation that generated this statistics
      * object.
      */
-    public final Unit<Duration> timeUnit;
+    public final String timeUnit;
 
     /**
      * The distance unit that is used in the simulation that generated this
      * statistics object.
      */
-    public final Unit<Length> distanceUnit;
+    public final String distanceUnit;
 
     /**
      * The speed unit that is used in the simulation that generated this
      * statistics object.
      */
-    public final Unit<Velocity> speedUnit;
+    public final String speedUnit;
 
     /**
      * The cumulative distance all vehicle have traveled.
@@ -182,9 +184,9 @@ public class StatisticsDTO implements Serializable {
         totalIdleMovement = new ArrayList<>();
         tradeProfits = new ArrayList<>();
         args = "";
-        timeUnit = time;
-        distanceUnit = distUnit;
-        speedUnit = speed;
+        timeUnit = time.toString();
+        distanceUnit = distUnit.toString();
+        speedUnit = speed.toString();
     }
 
     public void setArgs(String[] args) {
@@ -245,37 +247,13 @@ public class StatisticsDTO implements Serializable {
 
     public void save() {
         try {
-            String fileName = "stats.csv";
-            BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fileName, true), "UTF-8"));
-            final Field[] fields = getClass().getFields();
-            BufferedReader br = new BufferedReader(new FileReader(fileName));
-            if (br.readLine() == null) {
-                StringBuilder header = new StringBuilder();
-                header.append("date");
-                for (Field field : fields) {
-                    try {
-                        header.append(CSV_SEPARATOR);
-                        header.append(field.getName());
-                    } catch (final IllegalArgumentException e) {
-                        e.printStackTrace();
-                    }
-                }
-                bw.write(header.toString());
-            }
-            bw.newLine();
-            StringBuilder sb = new StringBuilder();
-            sb.append(new Date().toString());
-            for (Field field : fields) {
-                try {
-                    sb.append(CSV_SEPARATOR);
-                    sb.append(field.get(this).toString());
-                } catch (final IllegalArgumentException | IllegalAccessException e) {
-                    e.printStackTrace();
-                }
-            }
-            bw.write(sb.toString());
-            bw.flush();
-            bw.close();
+            String fileName = "stats/stats_" + new Date().getTime() + ".json";
+            Gson gson = new Gson();
+            String json = gson.toJson(this);
+            FileWriter fw = new FileWriter(fileName);
+            fw.write(json);
+            fw.flush();
+            fw.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
