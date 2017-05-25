@@ -48,7 +48,7 @@ public final class MasProject {
     static final int TAXI_CAPACITY = 5;
     private static final int NUM_TAXIS = 10000;
     private static final int SPEED_UP = 5;
-    private static final double DEFAULT_SAMPLE = 0.05;
+    private static final double DEFAULT_SAMPLE = 0.02;
 
     private static Random r = new Random();
 
@@ -67,6 +67,10 @@ public final class MasProject {
         options.addOption(new Option("f", "field", false, "Enable field"));
         options.addOption(new Option("t", "trade", false, "Enable trading"));
         options.addOption(Option.builder("s").longOpt("sample").desc("Data sampling factor").hasArg().type(Number.class).build());
+        options.addOption(Option.builder("m").longOpt("mtxstep").desc("Matrix Subdivision Step").hasArg().type(Number.class).build());
+        options.addOption(Option.builder("r").longOpt("resolution").desc("Minutes per time frame").hasArg().type(Number.class).build());
+        options.addOption(Option.builder("i").longOpt("influence").desc("Taxi repulsion influence range").hasArg().type(Number.class).build());
+        options.addOption(Option.builder("F").longOpt("frange").desc("Range for field analysis").hasArg().type(Number.class).build());
 
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -78,8 +82,12 @@ public final class MasProject {
             boolean useField = cmd.hasOption("field");
             boolean useTrading = cmd.hasOption("trade");
             double sample = cmd.hasOption("sample") ? (double) cmd.getParsedOptionValue("sample") : DEFAULT_SAMPLE;
+            int matrixStep = cmd.hasOption("mtxstep") ? ((Number) cmd.getParsedOptionValue("mtxstep")).intValue() : 0;
+            int minPerFrame = cmd.hasOption("resolution") ? ((Number) cmd.getParsedOptionValue("resolution")).intValue() : 1;
+            double taxiInfluenceRange = cmd.hasOption("influence") ? (double) cmd.getParsedOptionValue("influence") : DiscreteField.DEFAULT_TAXI_INFLUENCE_RANGE;
+            int fieldRange = cmd.hasOption("frange") ? ((Number) cmd.getParsedOptionValue("frange")).intValue() : Taxi.DEFAULT_FIELD_RANGE;
 
-            run(showGUI, useField, useTrading, sample);
+            run(showGUI, useField, useTrading, sample, matrixStep, minPerFrame, taxiInfluenceRange, fieldRange);
         } catch (ParseException e) {
             System.out.println(e.getMessage());
             formatter.printHelp("MAS-project", options);
@@ -91,11 +99,11 @@ public final class MasProject {
     /**
      * Starts the project.
      */
-    public static void run(boolean showGUI, boolean useField, boolean useTrading, double sample) {
+    public static void run(boolean showGUI, boolean useField, boolean useTrading, double sample, int matrixStep, int minPerFrame, double taxiInfluenceRange, int fieldRange) {
         DiscreteField discreteField = null;
         if (useField) {
-            FieldGenerator fieldGenerator = new FieldGenerator();
-            discreteField = fieldGenerator.load();
+            FieldGenerator fieldGenerator = new FieldGenerator(matrixStep, minPerFrame);
+            discreteField = fieldGenerator.load(taxiInfluenceRange);
         }
 
         Simulator.Builder simulatorBuilder = Simulator.builder()
@@ -120,7 +128,7 @@ public final class MasProject {
 
         // Register random Taxis
         for (int i = 0; i < NUM_TAXIS * sample; i++) {
-            simulator.register(new Taxi(i, roadModel.getRandomPosition(rng), TAXI_CAPACITY, discreteField, useTrading));
+            simulator.register(new Taxi(i, roadModel.getRandomPosition(rng), TAXI_CAPACITY, discreteField, useTrading, fieldRange));
         }
 
         MySQLDataLoader dataLoader = new MySQLDataLoader();

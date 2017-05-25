@@ -47,13 +47,12 @@ import java.util.stream.IntStream;
  * @author Evert Etienne & Olivier Kamers
  */
 public class Taxi extends Vehicle implements CommUser {
-    static final double FIELD_INFLUENCE_RANGE = 0.5;
     private static final int TRADE_DEAL_WAIT_TICKS = 2;
     private static final double TRADE_RANGE_MIN = 2;
     private static final double TRADE_RANGE_MAX = 2.5;
     private static final double COMMUNICATION_RANGE = Helper.ROADMODEL_BOUNDARIES_SCALE;
-    private static final double SPEED = 1000d;
-    private static final int FIELD_RANGE = 5;
+    private static final double SPEED = 15;
+    public static final int DEFAULT_FIELD_RANGE = 5;
     private static final double FIELD_VECTOR_FACTOR = 0.5;
     private static final int MAX_CONCURRENT_PICKUPS = 3;
     private final int id;
@@ -69,8 +68,9 @@ public class Taxi extends Vehicle implements CommUser {
     private int ticksSinceTradeDeal;
     private double dealCapacity;
     private boolean useTrading;
+    private int fieldRange;
 
-    Taxi(int id, Point startPosition, int capacity, DiscreteField df, boolean useTrading) {
+    Taxi(int id, Point startPosition, int capacity, DiscreteField df, boolean useTrading, int fieldRange) {
         super(VehicleDTO.builder()
                 .capacity(capacity)
                 .startPosition(startPosition)
@@ -88,6 +88,7 @@ public class Taxi extends Vehicle implements CommUser {
         this.ticksSinceTradeDeal = TRADE_DEAL_WAIT_TICKS;
         this.dealCapacity = 0;
         this.useTrading = useTrading;
+        this.fieldRange = fieldRange;
     }
 
     public ArrayList<MoveProgress> getIdleMoveProgress() {
@@ -166,7 +167,7 @@ public class Taxi extends Vehicle implements CommUser {
         }
         if (getState() == TaxiState.IDLE && df != null) {
             // Idle state: move according to the discrete field
-            fieldVector = df.getNextPosition(this, time.getStartTime(), messages, FIELD_RANGE).add(FIELD_VECTOR_FACTOR, fieldVector);
+            fieldVector = df.getNextPosition(this, time.getStartTime(), messages, fieldRange).add(FIELD_VECTOR_FACTOR, fieldVector);
             Point targetPoint = new Point(
                     Math.max(0, Math.min(rm.getBounds().get(1).x, getPosition().get().x + fieldVector.getX())),
                     Math.max(0, Math.min(rm.getBounds().get(1).y, getPosition().get().y + fieldVector.getY()))

@@ -5,40 +5,40 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public class FieldGenerator {
-    public static final int MATRIX_STEP = 100;
-    // For testing: calculate the field every second (so it should be equal to 1 round of pickups)
-    private static final int TIME_STEP = (int) (Duration.between(Helper.START_TIME, Helper.STOP_TIME).getSeconds() / 60.0);
-    //    private static final int TIME_STEP = 100;
+    public static final int DEFAULT_MATRIX_STEP = 100;
     private static double FIELD_INFLUENCE = 0.5;
     private double[][][] field;
     private double[] maxFieldValues;
     private int xDim;
     private int yDim;
+    private int matrixStep;
+    private int timeStep;
 
-    public FieldGenerator() {
-        this.xDim = (int) (MATRIX_STEP * Helper.getXScale());
-        this.yDim = (int) (MATRIX_STEP * Helper.getYScale());
-        this.field = new double[TIME_STEP][this.xDim][this.yDim];
-        this.maxFieldValues = new double[TIME_STEP];
+    public int getMatrixStep() {
+        return matrixStep;
     }
 
-    public static void main(String[] args) {
-        FieldGenerator f = new FieldGenerator();
-        DiscreteField df = f.load();
+    public FieldGenerator(int matrixStep, int minPerFrame) {
+        this.matrixStep = matrixStep == 0 ? DEFAULT_MATRIX_STEP : matrixStep;
+        this.xDim = (int) (this.matrixStep * Helper.getXScale());
+        this.yDim = (int) (this.matrixStep * Helper.getYScale());
+        this.timeStep = (int) (Duration.between(Helper.START_TIME, Helper.STOP_TIME).getSeconds() / 60.0 / minPerFrame);
+        this.field = new double[this.timeStep][this.xDim][this.yDim];
+        this.maxFieldValues = new double[this.timeStep];
     }
 
-    public DiscreteField load() {
+    public DiscreteField load(double taxiInfluenceRange) {
         MySQLDataLoader loader = new MySQLDataLoader();
-        Duration timeDuration = Duration.between(Helper.START_TIME, Helper.STOP_TIME).dividedBy(TIME_STEP);
+        Duration timeDuration = Duration.between(Helper.START_TIME, Helper.STOP_TIME).dividedBy(this.timeStep);
         LocalDateTime curTime = Helper.START_TIME.minus(Helper.FIELD_TIME_OFFSET);
-        for (int i = 0; i < TIME_STEP; i++) {
+        for (int i = 0; i < this.timeStep; i++) {
             this.field[i] = parseData(loader.read(curTime, curTime.plus(timeDuration)));
             curTime = curTime.plus(timeDuration);
         }
         smooth();
         findMaxValues();
 //        normalize();
-        return new DiscreteField(this.field, this.maxFieldValues, timeDuration);
+        return new DiscreteField(this.field, this.maxFieldValues, timeDuration, getMatrixStep(), taxiInfluenceRange);
     }
 
     private double[][] parseData(List<HistoricalData> data) {
@@ -58,9 +58,9 @@ public class FieldGenerator {
             for (int x = 0; x < xDim; x++) {
                 for (int y = 0; y < yDim; y++) {
                     this.field[t][x][y] += FIELD_INFLUENCE * this.field[Math.max(0, t - 1)][x][y]
-                            + FIELD_INFLUENCE / 1 * this.field[Math.min(TIME_STEP - 1, t + 1)][x][y]
-                            + FIELD_INFLUENCE / 2 * this.field[Math.min(TIME_STEP - 1, t + 2)][x][y]
-                            + FIELD_INFLUENCE / 4 * this.field[Math.min(TIME_STEP - 1, t + 3)][x][y];
+                            + FIELD_INFLUENCE / 1 * this.field[Math.min(this.timeStep - 1, t + 1)][x][y]
+                            + FIELD_INFLUENCE / 2 * this.field[Math.min(this.timeStep - 1, t + 2)][x][y]
+                            + FIELD_INFLUENCE / 4 * this.field[Math.min(this.timeStep - 1, t + 3)][x][y];
                 }
             }
         }
