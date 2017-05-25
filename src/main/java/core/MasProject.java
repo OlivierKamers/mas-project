@@ -71,6 +71,7 @@ public final class MasProject {
         options.addOption(Option.builder("r").longOpt("resolution").desc("Minutes per time frame").hasArg().type(Number.class).build());
         options.addOption(Option.builder("i").longOpt("influence").desc("Taxi repulsion influence range").hasArg().type(Number.class).build());
         options.addOption(Option.builder("F").longOpt("frange").desc("Range for field analysis").hasArg().type(Number.class).build());
+        options.addOption(Option.builder("l").longOpt("idlelimit").desc("Distance limit for idle driving").hasArg().type(Number.class).build());
 
         CommandLineParser parser = new DefaultParser();
         HelpFormatter formatter = new HelpFormatter();
@@ -86,8 +87,9 @@ public final class MasProject {
             int minPerFrame = cmd.hasOption("resolution") ? ((Number) cmd.getParsedOptionValue("resolution")).intValue() : 1;
             double taxiInfluenceRange = cmd.hasOption("influence") ? (double) cmd.getParsedOptionValue("influence") : DiscreteField.DEFAULT_TAXI_INFLUENCE_RANGE;
             int fieldRange = cmd.hasOption("frange") ? ((Number) cmd.getParsedOptionValue("frange")).intValue() : Taxi.DEFAULT_FIELD_RANGE;
+            double idleTravelLimit = cmd.hasOption("idlelimit") ? (double) cmd.getParsedOptionValue("idlelimit") : Double.MAX_VALUE;
 
-            run(showGUI, useField, useTrading, sample, matrixStep, minPerFrame, taxiInfluenceRange, fieldRange);
+            run(showGUI, useField, useTrading, sample, matrixStep, minPerFrame, taxiInfluenceRange, fieldRange, idleTravelLimit);
         } catch (ParseException e) {
             System.out.println(e.getMessage());
             formatter.printHelp("MAS-project", options);
@@ -99,7 +101,7 @@ public final class MasProject {
     /**
      * Starts the project.
      */
-    public static void run(boolean showGUI, boolean useField, boolean useTrading, double sample, int matrixStep, int minPerFrame, double taxiInfluenceRange, int fieldRange) {
+    public static void run(boolean showGUI, boolean useField, boolean useTrading, double sample, int matrixStep, int minPerFrame, double taxiInfluenceRange, int fieldRange, double idleTravelLimit) {
         DiscreteField discreteField = null;
         if (useField) {
             FieldGenerator fieldGenerator = new FieldGenerator(matrixStep, minPerFrame);
@@ -128,7 +130,7 @@ public final class MasProject {
 
         // Register random Taxis
         for (int i = 0; i < NUM_TAXIS * sample; i++) {
-            simulator.register(new Taxi(i, roadModel.getRandomPosition(rng), TAXI_CAPACITY, discreteField, useTrading, fieldRange));
+            simulator.register(new Taxi(i, roadModel.getRandomPosition(rng), TAXI_CAPACITY, discreteField, useTrading, fieldRange, idleTravelLimit));
         }
 
         MySQLDataLoader dataLoader = new MySQLDataLoader();

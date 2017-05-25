@@ -47,12 +47,12 @@ import java.util.stream.IntStream;
  * @author Evert Etienne & Olivier Kamers
  */
 public class Taxi extends Vehicle implements CommUser {
+    public static final int DEFAULT_FIELD_RANGE = 5;
     private static final int TRADE_DEAL_WAIT_TICKS = 2;
     private static final double TRADE_RANGE_MIN = 2;
     private static final double TRADE_RANGE_MAX = 2.5;
     private static final double COMMUNICATION_RANGE = Helper.ROADMODEL_BOUNDARIES_SCALE;
     private static final double SPEED = 15;
-    public static final int DEFAULT_FIELD_RANGE = 5;
     private static final double FIELD_VECTOR_FACTOR = 0.5;
     private static final int MAX_CONCURRENT_PICKUPS = 3;
     private final int id;
@@ -69,8 +69,10 @@ public class Taxi extends Vehicle implements CommUser {
     private double dealCapacity;
     private boolean useTrading;
     private int fieldRange;
+    private double idleTravelDistance;
+    private double idleTravelLimit;
 
-    Taxi(int id, Point startPosition, int capacity, DiscreteField df, boolean useTrading, int fieldRange) {
+    Taxi(int id, Point startPosition, int capacity, DiscreteField df, boolean useTrading, int fieldRange, double idleTravelLimit) {
         super(VehicleDTO.builder()
                 .capacity(capacity)
                 .startPosition(startPosition)
@@ -89,6 +91,8 @@ public class Taxi extends Vehicle implements CommUser {
         this.dealCapacity = 0;
         this.useTrading = useTrading;
         this.fieldRange = fieldRange;
+        this.idleTravelDistance = 0;
+        this.idleTravelLimit = idleTravelLimit;
     }
 
     public ArrayList<MoveProgress> getIdleMoveProgress() {
@@ -112,7 +116,7 @@ public class Taxi extends Vehicle implements CommUser {
     }
 
     @Override
-    protected void tickImpl(TimeLapse time) {
+    protected void tickImpl(@NotNull TimeLapse time) {
         final RoadModel rm = getRoadModel();
         final PDPModel pm = getPDPModel();
 
@@ -162,10 +166,11 @@ public class Taxi extends Vehicle implements CommUser {
                 route.remove(0);
                 if (route.isEmpty()) {
                     setState(TaxiState.IDLE);
+                    idleTravelDistance = 0;
                 }
             }
         }
-        if (getState() == TaxiState.IDLE && df != null) {
+        if (getState() == TaxiState.IDLE && df != null && idleTravelDistance < idleTravelLimit) {
             // Idle state: move according to the discrete field
             fieldVector = df.getNextPosition(this, time.getStartTime(), messages, fieldRange).add(FIELD_VECTOR_FACTOR, fieldVector);
             Point targetPoint = new Point(
@@ -174,6 +179,7 @@ public class Taxi extends Vehicle implements CommUser {
             );
             MoveProgress moveProgress = rm.moveTo(this, targetPoint, time);
             idleMoveProgress.add(moveProgress);
+            idleTravelDistance += moveProgress.distance().getValue();
         }
         // Broadcast position message
         sendPositionMessage();
