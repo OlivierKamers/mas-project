@@ -52,7 +52,7 @@ public class Taxi extends Vehicle implements CommUser {
     private static final double TRADE_RANGE_MIN = 2;
     private static final double TRADE_RANGE_MAX = 2.5;
     private static final double COMMUNICATION_RANGE = Helper.ROADMODEL_BOUNDARIES_SCALE;
-    private static final double SPEED = 1000d;
+    private static final double SPEED = 15;
     private static final int FIELD_RANGE = 5;
     private static final double FIELD_VECTOR_FACTOR = 0.5;
     private static final int MAX_CONCURRENT_PICKUPS = 3;
