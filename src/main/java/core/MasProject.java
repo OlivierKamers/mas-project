@@ -185,6 +185,11 @@ public final class MasProject {
                         .sum())
                 .collect(Collectors.toList());
         stats.setTotalIdleMovement(totalIdleMovements);
+        ArrayList<Double> tradeProfits = roadModel.getObjectsOfType(Taxi.class)
+                .stream()
+                .map(Taxi::getTradeProfits)
+                .collect(ArrayList::new, ArrayList::addAll, ArrayList::addAll);
+        stats.setTradeProfits(tradeProfits);
         System.out.println(stats);
         stats.save();
     }

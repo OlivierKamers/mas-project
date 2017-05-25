@@ -129,6 +129,7 @@ public class StatisticsDTO implements Serializable {
     public ArrayList<Integer> amountOfIdleTaxis;
     public ArrayList<Integer> amountOfWaitingCustomers;
     public List<Double> totalIdleMovement;
+    public ArrayList<Double> tradeProfits;
 
     /**
      * Create a new statistics object.
@@ -177,9 +178,14 @@ public class StatisticsDTO implements Serializable {
         amountOfIdleTaxis = new ArrayList<>();
         amountOfWaitingCustomers = new ArrayList<>();
         totalIdleMovement = new ArrayList<>();
+        tradeProfits = new ArrayList<>();
         timeUnit = time;
         distanceUnit = distUnit;
         speedUnit = speed;
+    }
+
+    public void setTradeProfits(ArrayList<Double> tradeProfits) {
+        this.tradeProfits = tradeProfits;
     }
 
     public void setAmountOfIdleTaxis(ArrayList<Integer> amountOfIdleTaxis) {

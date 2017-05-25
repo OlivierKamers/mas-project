@@ -59,6 +59,7 @@ public class Taxi extends Vehicle implements CommUser {
     private Vector2D fieldVector;
     private ArrayList<Customer> currentCustomers;
     private ArrayList<Customer> pickedUpCustomers;
+    private ArrayList<Double> tradeProfits;
     private ArrayList<Point> route;
     private double remainingRouteLength;
     private Optional<CommDevice> commDevice;
@@ -71,7 +72,6 @@ public class Taxi extends Vehicle implements CommUser {
     private int fieldRange;
     private double idleTravelDistance;
     private double idleTravelLimit;
-
     Taxi(int id, Point startPosition, int capacity, DiscreteField df, boolean useTrading, int fieldRange, double idleTravelLimit) {
         super(VehicleDTO.builder()
                 .capacity(capacity)
@@ -81,6 +81,7 @@ public class Taxi extends Vehicle implements CommUser {
         this.currentCustomers = new ArrayList<>();
         this.pickedUpCustomers = new ArrayList<>();
         this.idleMoveProgress = new ArrayList<>();
+        this.tradeProfits = new ArrayList<>();
         this.route = new ArrayList<>();
         this.remainingRouteLength = 0;
         this.id = id;
@@ -93,6 +94,10 @@ public class Taxi extends Vehicle implements CommUser {
         this.fieldRange = fieldRange;
         this.idleTravelDistance = 0;
         this.idleTravelLimit = idleTravelLimit;
+    }
+
+    public ArrayList<Double> getTradeProfits() {
+        return tradeProfits;
     }
 
     public ArrayList<MoveProgress> getIdleMoveProgress() {
@@ -400,6 +405,7 @@ public class Taxi extends Vehicle implements CommUser {
                         TradeAccept tradeAccept = new TradeAccept(tradeDeal.getCustomer());
 //                        System.out.println("Sending trade accept " + tradeAccept.toString() + " for deal " + tradeDeal.toString());
                         commDevice.get().send(tradeAccept, tradeDeal.getTaxi());
+                        tradeProfits.add(tradeDeal.getProfit());
                         currentCustomers.remove(tradeDeal.getCustomer());
                         sortRoute();
                     }
