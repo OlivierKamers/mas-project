@@ -224,8 +224,7 @@ public class Taxi extends Vehicle implements CommUser {
                 .filter(m -> m.getContents() instanceof ContractDeal)
                 .map(msg -> (ContractDeal) msg.getContents())
                 .filter(m -> m.getCustomer().getNeededCapacity() <= freeCapacity)
-                .sorted(Comparator.comparingDouble(ContractDeal::getBid).reversed())
-                .findFirst();
+                .max(Comparator.comparingDouble(ContractDeal::getBid).reversed());
         deal.ifPresent(this::acceptDeal);
     }
 

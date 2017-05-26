@@ -130,6 +130,9 @@ public class DiscreteField {
         return res;
     }
 
+    /**
+     * TODO: 'cachen' met dynamic programming
+     */
     private List<int[]> getBottomCoords(int offset, int xPos, int yPos) {
         List<int[]> res = new ArrayList<>();
         int y = yPos + offset;
