@@ -51,7 +51,6 @@ public class Taxi extends Vehicle implements CommUser {
     private static final int TRADE_DEAL_WAIT_TICKS = 2;
     private static final double TRADE_RANGE_MIN = 2;
     private static final double TRADE_RANGE_MAX = 2.5;
-    private static final double COMMUNICATION_RANGE = Helper.ROADMODEL_BOUNDARIES_SCALE;
     private static final double SPEED = 15;
     private static final double FIELD_VECTOR_FACTOR = 0.5;
     private static final int MAX_CONCURRENT_PICKUPS = 3;
@@ -72,6 +71,7 @@ public class Taxi extends Vehicle implements CommUser {
     private int fieldRange;
     private double idleTravelDistance;
     private double idleTravelLimit;
+
     Taxi(int id, Point startPosition, int capacity, DiscreteField df, boolean useTrading, int fieldRange, double idleTravelLimit) {
         super(VehicleDTO.builder()
                 .capacity(capacity)
@@ -503,11 +503,7 @@ public class Taxi extends Vehicle implements CommUser {
 
     @Override
     public void setCommDevice(@NotNull CommDeviceBuilder builder) {
-        commDevice = Optional.of(builder
-                .setReliability(1)
-                .setMaxRange(COMMUNICATION_RANGE)
-                .build()
-        );
+        commDevice = Optional.of(builder.build());
     }
 
     @Override

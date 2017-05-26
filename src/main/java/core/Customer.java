@@ -27,7 +27,6 @@ import java.util.Comparator;
 public class Customer extends Parcel implements CommUser, TickListener {
     // time in ms
     public static final long SERVICE_DURATION = 0;
-    private static final double MAX_RANGE = Helper.ROADMODEL_BOUNDARIES_SCALE;
     private static final int MAX_TICKS_TO_WAIT_FOR_ACCEPT = 3;
     private static final int MAX_TICKS_TO_WAIT_FOR_BID = 5;
 
@@ -115,11 +114,7 @@ public class Customer extends Parcel implements CommUser, TickListener {
 
     @Override
     public void setCommDevice(CommDeviceBuilder builder) {
-        commDevice = Optional.of(builder
-                .setReliability(1)
-                .setMaxRange(MAX_RANGE)
-                .build()
-        );
+        commDevice = Optional.of(builder.build());
     }
 
     public long getPickupTime() {
