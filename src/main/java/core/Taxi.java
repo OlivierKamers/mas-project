@@ -195,7 +195,10 @@ public class Taxi extends Vehicle implements CommUser {
     }
 
     private void sendPositionMessage() {
-        commDevice.get().broadcast(new PositionBroadcast(getPosition().get(), getFreeCapacity()));
+        double freeCap = getFreeCapacity();
+        if (freeCap != 0) {
+            commDevice.get().broadcast(new PositionBroadcast(getPosition().get(), freeCap));
+        }
     }
 
     /**
