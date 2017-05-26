@@ -42,7 +42,7 @@ def make_plots(timestamp, j):
   make_histogram(timestamp, j, 'Customer waiting time before pickup', 'pickupWaitingTimes', 'Waiting time (min)')
   make_histogram(timestamp, j, 'Route length reduction by trading', 'tradeProfits', 'Trade profit (km)')
   make_histogram(timestamp, j, 'Number of requests before pickup', 'numberOfRequests', 'Count')
-  # make_histogram(timestamp, j, 'Ratio of actual distance to shortest distance', 'travelTimeOverhead', 'Ratio')
+  make_histogram(timestamp, j, 'Ratio of actual distance to shortest distance', 'travelTimeOverhead', 'Ratio')
 
 
 def average(arr, n):
