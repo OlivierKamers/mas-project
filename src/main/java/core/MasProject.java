@@ -34,6 +34,7 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.Nullable;
 import javax.measure.unit.SI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -61,6 +62,7 @@ public final class MasProject {
      * @param args The first option may optionally indicate the end time of the simulation.
      */
     public static void main(@Nullable String[] args) {
+        System.out.println(Arrays.toString(args));
         Options options = new Options();
 
         options.addOption(new Option("g", "gui", false, "Run with GUI"));
