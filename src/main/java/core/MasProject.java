@@ -33,6 +33,8 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import javax.measure.unit.SI;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -144,6 +146,10 @@ public final class MasProject {
         simulator.addTickListener(new TickListener() {
             @Override
             public void tick(@NotNull TimeLapse time) {
+                if (time.getStartTime() % (1 * 60 * 1000) == 0) {
+                    // Print progress every 15 simulated minutes
+                    System.out.println(LocalTime.now().toString() + " ==> " + Helper.START_TIME.plusNanos(time.getStartTime() * 1000000));
+                }
                 amountOfIdleTaxis.add((int) roadModel.getObjectsOfType(Taxi.class).stream().filter(t -> t.getState() == Taxi.TaxiState.IDLE).count());
                 amountOfWaitingCustomers.add(roadModel.getObjectsOfType(Customer.class).size());
 
