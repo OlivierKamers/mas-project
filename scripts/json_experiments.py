@@ -30,7 +30,7 @@ def make_double_plot(timestamp, j, title, k1, k2, xlabel='Tick'):
   ax1.tick_params('y', colors='r')
 
   ax2 = ax1.twinx()
-  ax2.plot(j[k2], 'b--')
+  ax2.plot(j[k2], 'b-')
   ax2.set_ylabel(k2, color='b')
   ax2.tick_params('y', colors='b')
 
