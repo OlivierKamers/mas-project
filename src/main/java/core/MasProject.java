@@ -145,7 +145,7 @@ public final class MasProject {
         simulator.addTickListener(new TickListener() {
             @Override
             public void tick(@NotNull TimeLapse time) {
-                if (time.getStartTime() % (1 * 60 * 1000) == 0) {
+                if (time.getStartTime() % (15 * 60 * 1000) == 0) {
                     // Print progress every 15 simulated minutes
                     System.out.println(LocalTime.now().toString() + " ==> " + Helper.START_TIME.plusNanos(time.getStartTime() * 1000000));
                 }
