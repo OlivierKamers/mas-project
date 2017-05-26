@@ -2,7 +2,6 @@ package core.statistics;
 
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -12,10 +11,10 @@ import javax.measure.quantity.Duration;
 import javax.measure.quantity.Length;
 import javax.measure.quantity.Velocity;
 import javax.measure.unit.Unit;
-import java.io.*;
-import java.lang.reflect.Field;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -46,7 +45,6 @@ import java.util.List;
  */
 public class StatisticsDTO implements Serializable {
     private static final long serialVersionUID = 1968951252238291733L;
-    private static final String CSV_SEPARATOR = ";";
 
     /**
      * The time unit that is used in the simulation that generated this statistics
@@ -83,31 +81,16 @@ public class StatisticsDTO implements Serializable {
      * This is the time between the announcement of a parcel and the time it is picked up by an agent.
      */
     public final ArrayList<Long> pickupWaitingTimes;
-    public final long pickupWaitingTimeSum;
-    public final long pickupWaitingTimeMin;
-    public final long pickupWaitingTimeMax;
-    public final long pickupWaitingTimeMedian;
-    public final long pickupWaitingTimeAvg;
     /**
      * The total number of contract requests sent by parcels that have been picked up.
      */
     public final ArrayList<Integer> numberOfRequests;
-    public final int numberOfRequestsSum;
-    public final int numberOfRequestsMin;
-    public final int numberOfRequestsMax;
-    public final int numberOfRequestsMedian;
-    public final float numberOfRequestsAvg;
     /**
      * The cumulative travel time overhead of all parcels.
      * This is the actual time it took to go from its pickup location to its delivery location
      * divided by the time it would have taken if the taxi drove in a straight line at its max speed.
      */
-    public final float travelTimeOverhead;
-    /**
-     * The average travel time overhead.
-     * This is the {@link #travelTimeOverhead} divided by the {@link #totalDeliveries}.
-     */
-    public final float travelTimeOverheadAvg;
+    public final ArrayList<Float> travelTimeOverhead;
     /**
      * The time (ms) it took to compute the simulation.
      */
@@ -141,7 +124,7 @@ public class StatisticsDTO implements Serializable {
      * @param dist      {@link #totalDistance}.
      * @param pick      {@link #totalPickups}.
      * @param del       {@link #totalDeliveries}.
-     * @param pickWT    {@link #pickupWaitingTimeSum}.
+     * @param pickWT    {@link #pickupWaitingTimes}.
      * @param req       {@link #numberOfRequests}.
      * @param travelTOh {@link #travelTimeOverhead}.
      * @param compT     {@link #computationTime}.
@@ -154,26 +137,15 @@ public class StatisticsDTO implements Serializable {
      * @param speed     {@link #speedUnit}.
      */
     public StatisticsDTO(double dist, int pick, int del,
-                         ArrayList<Long> pickWT, ArrayList<Integer> req, float travelTOh, long compT, long simT, boolean finish,
+                         ArrayList<Long> pickWT, ArrayList<Integer> req, ArrayList<Float> travelTOh, long compT, long simT, boolean finish,
                          int totalVeh, int moved, Unit<Duration> time,
                          Unit<Length> distUnit, Unit<Velocity> speed) {
         totalDistance = dist;
         totalPickups = pick;
         totalDeliveries = del;
         pickupWaitingTimes = pickWT;
-        pickupWaitingTimeSum = !pickWT.isEmpty() ? pickWT.stream().mapToLong(Long::longValue).sum() : 0;
-        pickupWaitingTimeMin = !pickWT.isEmpty() ? pickWT.stream().mapToLong(Long::longValue).min().getAsLong() : 0;
-        pickupWaitingTimeMax = !pickWT.isEmpty() ? pickWT.stream().mapToLong(Long::longValue).max().getAsLong() : 0;
-        pickupWaitingTimeMedian = !pickWT.isEmpty() ? pickWT.get(pickWT.size() / 2) : 0L;
-        pickupWaitingTimeAvg = (totalDeliveries > 0) ? pickupWaitingTimeSum / totalDeliveries : 0;
         numberOfRequests = req;
-        numberOfRequestsSum = !req.isEmpty() ? req.stream().mapToInt(Integer::intValue).sum() : 0;
-        numberOfRequestsMin = !req.isEmpty() ? req.stream().mapToInt(Integer::intValue).min().getAsInt() : 0;
-        numberOfRequestsMax = !req.isEmpty() ? req.stream().mapToInt(Integer::intValue).max().getAsInt() : 0;
-        numberOfRequestsMedian = !req.isEmpty() ? req.get(req.size() / 2) : 0;
-        numberOfRequestsAvg = (totalPickups > 0) ? 1f * numberOfRequestsSum / totalPickups : 0;
         travelTimeOverhead = travelTOh;
-        travelTimeOverheadAvg = (totalDeliveries > 0) ? travelTimeOverhead / totalDeliveries : 0;
         computationTime = compT;
         simulationTime = simT;
         simFinish = finish;
@@ -226,12 +198,12 @@ public class StatisticsDTO implements Serializable {
         if (obj.getClass() != getClass()) {
             return false;
         }
-        final com.github.rinde.rinsim.pdptw.common.StatisticsDTO other = (com.github.rinde.rinsim.pdptw.common.StatisticsDTO) obj;
+        final StatisticsDTO other = (StatisticsDTO) obj;
         return new EqualsBuilder().append(totalDistance, other.totalDistance)
                 .append(totalPickups, other.totalPickups)
                 .append(totalDeliveries, other.totalDeliveries)
-                .append(pickupWaitingTimeSum, other.pickupTardiness)
-                .append(travelTimeOverhead, other.deliveryTardiness)
+                .append(pickupWaitingTimes, other.pickupWaitingTimes)
+                .append(travelTimeOverhead, other.travelTimeOverhead)
                 .append(simulationTime, other.simulationTime)
                 .append(simFinish, other.simFinish)
                 .append(totalVehicles, other.totalVehicles)
@@ -241,7 +213,7 @@ public class StatisticsDTO implements Serializable {
     @Override
     public int hashCode() {
         return Objects.hashCode(totalDistance, totalPickups,
-                pickupWaitingTimeSum, travelTimeOverhead, simulationTime,
+                pickupWaitingTimes, travelTimeOverhead, simulationTime,
                 simFinish, totalVehicles, movedVehicles);
     }
 

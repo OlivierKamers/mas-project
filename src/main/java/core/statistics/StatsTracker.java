@@ -155,7 +155,7 @@ public final class StatsTracker extends AbstractModelVoid {
         ArrayList<Integer> totalRequestsBeforePickup;
         int totalDeliveries;
         ArrayList<Long> pickupWaitingTimes;
-        float travelOverhead;
+        ArrayList<Float> travelOverhead;
 
         // simulation
         long startTimeReal;
@@ -174,7 +174,7 @@ public final class StatsTracker extends AbstractModelVoid {
             totalDeliveries = 0;
             pickupWaitingTimes = new ArrayList<>();
             totalRequestsBeforePickup = new ArrayList<>();
-            travelOverhead = 0;
+            travelOverhead = new ArrayList<>();
 
             simFinish = false;
         }
@@ -225,10 +225,10 @@ public final class StatsTracker extends AbstractModelVoid {
                 final double travelTime = clock.getTimeUnit().getConverterTo(Unit.valueOf("h")).convert(pme.time - customer.getPickupTime());
                 final double minimumTime = Point.distance(customer.getPickupLocation(), customer.getDeliveryLocation()) / MasProject.MAX_SPEED;
                 if (travelTime > 0 && minimumTime > 0) {
-                    travelOverhead += travelTime / minimumTime;
+                    travelOverhead.add((float) (travelTime / minimumTime));
                 } else {
                     // To avoid infinity, just say that overhead is 0 (fraction is 1)
-                    travelOverhead += 1;
+                    travelOverhead.add(1f);
                 }
                 totalDeliveries++;
             } else if (e.getEventType() == NEW_PARCEL) {

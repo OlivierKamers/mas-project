@@ -6,21 +6,43 @@ from math import ceil
 import numpy as np
 from matplotlib import pyplot as plt
 
-path = os.path.join('..', 'stats')
+stats_path = os.path.join('..', 'stats')
+figs_path = os.path.join('..', 'figures')
+
+
+def cleanup(j):
+  j['pickupWaitingTimes'] = map(lambda x: 1.0 * x / 60000, j['pickupWaitingTimes'])
 
 
 def analyze_experiment(filename):
-  with open(os.path.join(path, filename), 'r') as f:
+  with open(os.path.join(stats_path, filename), 'r') as f:
     j = json.load(f)
     timestamp = filename.split('_')[1].split('.')[0]
     print timestamp
     print j
-    # print "\n".join(j.keys())
+    print "\n".join(j.keys())
+    cleanup(j)
     make_plots(timestamp, j)
+
+
+def make_histogram(timestamp, j, title, k, xlabel):
+  plt.hist(j[k], 50, facecolor='green', alpha=0.75)
+  plt.xlabel(xlabel)
+  plt.ylabel('Count')
+  plt.title(title)
+  plt.grid(True)
+
+  # plt.show()
+  plt.savefig(os.path.join(figs_path, '{}_{}_{}.png'.format(timestamp, k, 'hist')), dpi=300)
+  plt.close('all')
 
 
 def make_plots(timestamp, j):
   make_double_plot(timestamp, j, 'Amount of idle taxis and waiting customers', 'amountOfIdleTaxis', 'amountOfWaitingCustomers')
+  make_histogram(timestamp, j, 'Customer waiting time before pickup', 'pickupWaitingTimes', 'Waiting time (min)')
+  make_histogram(timestamp, j, 'Route length reduction by trading', 'tradeProfits', 'Trade profit (km)')
+  make_histogram(timestamp, j, 'Number of requests before pickup', 'numberOfRequests', 'Count')
+  # make_histogram(timestamp, j, 'Ratio of actual distance to shortest distance', 'travelTimeOverhead', 'Ratio')
 
 
 def average(arr, n):
@@ -54,12 +76,12 @@ def make_double_plot(timestamp, j, title, k1, k2, xlabel='Tick'):
   plt.title(title)
   # fig.tight_layout()
   # plt.show()
-  plt.savefig(os.path.join('..', 'figures', '{}_{}_{}.png'.format(timestamp, k1, k2)), dpi=300)
+  plt.savefig(os.path.join(figs_path, '{}_{}_{}.png'.format(timestamp, k1, k2)), dpi=300)
   plt.close('all')
 
 
 def main():
-  for f in os.listdir(path):
+  for f in os.listdir(stats_path):
     if fnmatch.fnmatch(f, 'stats_*.json'):
       analyze_experiment(f)
 
