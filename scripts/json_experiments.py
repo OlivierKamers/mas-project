@@ -15,7 +15,7 @@ def analyze_experiment(filename):
     timestamp = filename.split('_')[1].split('.')[0]
     print timestamp
     print j
-    print "\n".join(j.keys())
+    # print "\n".join(j.keys())
     make_plots(timestamp, j)
 
 
@@ -40,6 +40,7 @@ def make_double_plot(timestamp, j, title, k1, k2, xlabel='Tick'):
   ax1.plot(x1, y1, 'r-')
   ax1.set_xlabel(xlabel)
   ax1.set_ylabel(k1, color='r')
+  ax1.margins(0, 0.1)
   ax1.tick_params('y', colors='r')
 
   ax2 = ax1.twinx()
@@ -47,12 +48,11 @@ def make_double_plot(timestamp, j, title, k1, k2, xlabel='Tick'):
   x2 = np.linspace(0, x_max, num=len(y2))
   ax2.plot(x2, y2, 'b-')
   ax2.set_ylabel(k2, color='b')
+  ax2.margins(0, 0.1)
   ax2.tick_params('y', colors='b')
 
-  plt.ylim(ymin=0)
-
   plt.title(title)
-  fig.tight_layout()
+  # fig.tight_layout()
   # plt.show()
   plt.savefig(os.path.join('..', 'figures', '{}_{}_{}.png'.format(timestamp, k1, k2)), dpi=300)
   plt.close('all')
