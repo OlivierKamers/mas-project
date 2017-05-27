@@ -18,9 +18,9 @@ def analyze_experiment(filename):
   with open(os.path.join(stats_path, filename), 'r') as f:
     j = json.load(f)
     timestamp = filename.split('_')[1].split('.')[0]
-    print timestamp
-    print j
-    print "\n".join(j.keys())
+    # print timestamp
+    # print j
+    # print "\n".join(j.keys())
     cleanup(j)
     make_plots(timestamp, j)
 
