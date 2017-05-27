@@ -36,6 +36,7 @@ import org.eclipse.swt.widgets.TableItem;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Field;
+import java.util.ConcurrentModificationException;
 
 
 /**
@@ -136,9 +137,8 @@ public final class StatsPanel extends Model.AbstractModel<Void> implements Panel
             }
             for (int i = 0; i < fields.length; i++) {
                 try {
-                    statsTable.get().getItem(i)
-                            .setText(1, fields[i].get(stats).toString());
-                } catch (final IllegalArgumentException | IllegalAccessException e) {
+                    statsTable.get().getItem(i).setText(1, fields[i].get(stats).toString());
+                } catch (final ConcurrentModificationException | IllegalArgumentException | IllegalAccessException e) {
                     statsTable.get().getItem(i).setText(1, e.getMessage());
                 }
             }
