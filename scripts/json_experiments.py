@@ -26,6 +26,7 @@ def analyze_experiment(filename):
 
 
 def make_histogram(timestamp, j, title, k, xlabel):
+  if len(j[k]) == 0: return
   plt.hist(j[k], 50, facecolor='green', alpha=0.75)
   plt.xlabel(xlabel)
   plt.ylabel('Count')
