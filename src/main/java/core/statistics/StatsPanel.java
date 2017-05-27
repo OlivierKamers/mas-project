@@ -139,7 +139,7 @@ public final class StatsPanel extends Model.AbstractModel<Void> implements Panel
                 try {
                     statsTable.get().getItem(i).setText(1, fields[i].get(stats).toString());
                 } catch (final ConcurrentModificationException | IllegalArgumentException | IllegalAccessException e) {
-                    statsTable.get().getItem(i).setText(1, e.getMessage());
+                    statsTable.get().getItem(i).setText(1, e.getMessage() == null ? "Error" : e.getMessage());
                 }
             }
         });
