@@ -21,7 +21,6 @@ import com.github.rinde.rinsim.core.model.ModelBuilder.AbstractModelBuilder;
 import com.github.rinde.rinsim.core.model.pdp.PDPModel;
 import com.github.rinde.rinsim.core.model.pdp.PDPModel.PDPModelEventType;
 import com.github.rinde.rinsim.core.model.pdp.PDPModelEvent;
-import com.github.rinde.rinsim.core.model.pdp.Parcel;
 import com.github.rinde.rinsim.core.model.pdp.Vehicle;
 import com.github.rinde.rinsim.core.model.road.GenericRoadModel.RoadEventType;
 import com.github.rinde.rinsim.core.model.road.MoveEvent;
@@ -193,27 +192,19 @@ public final class StatsTracker extends AbstractModelVoid {
                 final MoveEvent me = (MoveEvent) e;
                 increment((MovingRoadUser) me.roadUser, me.pathProgress.distance().getValue());
                 totalDistance += me.pathProgress.distance().getValue();
-            } else if (e.getEventType() == PDPModelEventType.START_PICKUP) {
-                verify(e instanceof PDPModelEvent);
-                final PDPModelEvent pme = (PDPModelEvent) e;
-                final Parcel parcel = pme.parcel;
-                final Vehicle vehicle = pme.vehicle;
-                assert parcel != null;
-                assert vehicle != null;
-
-                final long waitingTime = pme.time - parcel.getOrderAnnounceTime();
-                pickupWaitingTimes.add(waitingTime);
             } else if (e.getEventType() == PDPModelEventType.END_PICKUP) {
                 verify(e instanceof PDPModelEvent);
                 final PDPModelEvent pme = (PDPModelEvent) e;
                 assert pme.parcel instanceof Customer;
                 final Customer customer = (Customer) pme.parcel;
+                final Vehicle vehicle = pme.vehicle;
                 assert customer != null;
+                assert vehicle != null;
 
+                final long waitingTime = clock.getCurrentTime() - customer.getOrderAnnounceTime();
+                pickupWaitingTimes.add(waitingTime);
                 totalRequestsBeforePickup.add(customer.getNumberOfSentRequests());
                 totalPickups++;
-            } else if (e.getEventType() == PDPModelEventType.START_DELIVERY) {
-                // do nothing, delivery has only started
             } else if (e.getEventType() == PDPModelEventType.END_DELIVERY) {
                 final PDPModelEvent pme = (PDPModelEvent) e;
                 assert pme.parcel instanceof Customer;
@@ -222,8 +213,9 @@ public final class StatsTracker extends AbstractModelVoid {
                 assert customer != null;
                 assert vehicle != null;
 
-                final double travelTime = clock.getTimeUnit().getConverterTo(Unit.valueOf("h")).convert(pme.time - customer.getPickupTime());
+                final double travelTime = clock.getTimeUnit().getConverterTo(Unit.valueOf("h")).convert(clock.getCurrentTime() - customer.getPickupTime());
                 final double minimumTime = Point.distance(customer.getPickupLocation(), customer.getDeliveryLocation()) / MasProject.MAX_SPEED;
+
                 if (travelTime > 0 && minimumTime > 0) {
                     travelOverhead.add((float) (travelTime / minimumTime));
                 } else {
