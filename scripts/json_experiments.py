@@ -19,9 +19,11 @@ def analyze_experiment(filename):
     j = json.load(f)
     timestamp = filename.split('_')[1].split('.')[0]
     print timestamp
+    print j['args']
     # print j
     # print "\n".join(j.keys())
     cleanup(j)
+    print np.average(j['pickupWaitingTimes'])
     make_plots(timestamp, j)
 
 
@@ -34,7 +36,19 @@ def make_histogram(timestamp, j, title, k, xlabel):
   plt.grid(True)
 
   # plt.show()
-  plt.savefig(os.path.join(figs_path, '{}_{}_{}.png'.format(timestamp, k, 'hist')), dpi=300)
+  plt.savefig(os.path.join(figs_path, '{}_{}_{}_{}.png'.format(timestamp, j['args'], k, 'hist')), dpi=300)
+  plt.close('all')
+
+
+def make_boxplot(timestamp, j, title, k, xlabel):
+  if len(j[k]) == 0: return
+  plt.boxplot(j[k])
+  plt.xlabel(xlabel)
+  plt.ylabel('times')
+  plt.title(title)
+
+  # plt.show()
+  plt.savefig(os.path.join(figs_path, '{}_{}_{}_{}.png'.format(timestamp, j['args'], k, 'boxplt')), dpi=300)
   plt.close('all')
 
 
@@ -44,6 +58,7 @@ def make_plots(timestamp, j):
   make_histogram(timestamp, j, 'Route length reduction by trading', 'tradeProfits', 'Trade profit (km)')
   make_histogram(timestamp, j, 'Number of requests before pickup', 'numberOfRequests', 'Count')
   make_histogram(timestamp, j, 'Ratio of actual distance to shortest distance', 'travelTimeOverhead', 'Ratio')
+  make_boxplot(timestamp, j, 'pickupWaitingTimes', 'pickupWaitingTimes', 'pickupWaitingTimesXLABEL')
 
 
 def average(arr, n):
@@ -77,7 +92,7 @@ def make_double_plot(timestamp, j, title, k1, k2, xlabel='Tick'):
   plt.title(title)
   # fig.tight_layout()
   # plt.show()
-  plt.savefig(os.path.join(figs_path, '{}_{}_{}.png'.format(timestamp, k1, k2)), dpi=300)
+  plt.savefig(os.path.join(figs_path, '{}_{}_{}_{}.png'.format(timestamp, j['args'], k1, k2)), dpi=300)
   plt.close('all')
 
 
