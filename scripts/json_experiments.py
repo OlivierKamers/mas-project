@@ -23,7 +23,7 @@ def analyze_experiment(filename):
     # print j
     # print "\n".join(j.keys())
     cleanup(j)
-    print np.average(j['pickupWaitingTimes'])
+    print 'pickupWaitingTimeAverage: ' + str(np.average(j['pickupWaitingTimes']))
     make_plots(timestamp, j)
 
 
