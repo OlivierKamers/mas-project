@@ -1,13 +1,17 @@
+import datetime as dt
 import fnmatch
 import json
 import os
 from math import ceil
 
+import matplotlib.dates as mdates
 import numpy as np
 from matplotlib import pyplot as plt
 
 stats_path = os.path.join('..', 'stats')
 figs_path = os.path.join('..', 'figures')
+START_TIME = dt.datetime(2016, 1, 13, 0, 0, 0)
+END_TIME = dt.datetime(2016, 1, 14, 0, 0, 0)
 
 
 def cleanup(j):
@@ -66,7 +70,11 @@ def average(arr, n):
   return np.mean(np.asarray(arr)[:end].reshape(-1, n), 1)
 
 
-def make_double_plot(timestamp, j, title, k1, k2, xlabel='Tick'):
+def to_time(tick, tick_diff):
+  return START_TIME + dt.timedelta(seconds=(END_TIME - START_TIME).total_seconds() * tick / tick_diff)
+
+
+def make_double_plot(timestamp, j, title, k1, k2, xlabel='Time'):
   fig, ax1 = plt.subplots()
 
   points = 500
@@ -75,7 +83,12 @@ def make_double_plot(timestamp, j, title, k1, k2, xlabel='Tick'):
 
   y1 = average(j[k1], sample)
   x1 = np.linspace(0, x_max, num=len(y1))
-  ax1.plot(x1, y1, 'r-')
+  x1_time = map(lambda x: to_time(x, x1[-1] - x1[0]), x1)
+  dl = mdates.AutoDateLocator()
+  plt.gca().xaxis.set_major_formatter(mdates.AutoDateFormatter(dl))
+  plt.gca().xaxis.set_major_locator(dl)
+  ax1.plot(x1_time, y1, 'r-')
+  plt.gcf().autofmt_xdate()
   ax1.set_xlabel(xlabel)
   ax1.set_ylabel(k1, color='r')
   ax1.margins(0, 0.1)
@@ -84,7 +97,8 @@ def make_double_plot(timestamp, j, title, k1, k2, xlabel='Tick'):
   ax2 = ax1.twinx()
   y2 = average(j[k2], sample)
   x2 = np.linspace(0, x_max, num=len(y2))
-  ax2.plot(x2, y2, 'b-')
+  x2_time = map(lambda x: to_time(x, x2[-1] - x2[0]), x2)
+  ax2.plot(x2_time, y2, 'b-')
   ax2.set_ylabel(k2, color='b')
   ax2.margins(0, 0.1)
   ax2.tick_params('y', colors='b')
