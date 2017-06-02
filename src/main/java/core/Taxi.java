@@ -48,6 +48,7 @@ import java.util.stream.IntStream;
  */
 public class Taxi extends Vehicle implements CommUser {
     public static final int DEFAULT_FIELD_RANGE = 5;
+    private static final double MINIMUM_TRADE_PROFIT = 5.0;
     private static final int TRADE_DEAL_WAIT_TICKS = 2;
     private static final double TRADE_RANGE_MIN = 2;
     private static final double TRADE_RANGE_MAX = 2.5;
@@ -432,7 +433,7 @@ public class Taxi extends Vehicle implements CommUser {
                 .collect(Collectors.toList());
 
         TradeRequest bestRequest = null;
-        double bestProfit = 0;
+        double bestProfit = MINIMUM_TRADE_PROFIT;
         for (TradeRequest tradeRequest : tradeRequests) {
             double profit = calculateProfit(tradeRequest);
             if (profit > bestProfit) {
