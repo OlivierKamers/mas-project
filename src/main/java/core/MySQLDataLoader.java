@@ -65,6 +65,8 @@ public class MySQLDataLoader {
                 result.add(parse(rst));
             }
 //            System.out.println(statement.toString() + " ==> " + result.size() + " pickups.");
+            rst.close();
+            statement.close();
             return result;
         } catch (SQLException e) {
             e.printStackTrace();

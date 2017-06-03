@@ -146,12 +146,7 @@ public final class MasProject {
         simulator.addTickListener(new TickListener() {
             @Override
             public void tick(@NotNull TimeLapse time) {
-                Collection<Parcel> parcels = new ArrayList<>(pdpModel.getParcels(PDPModel.ParcelState.DELIVERED));
-                parcels.forEach(c -> {
-                    commModel.unregister((Customer) c);
-                    pdpModel.unregister(c);
-                    roadModel.unregister(c);
-                });
+                pdpModel.getParcels(PDPModel.ParcelState.DELIVERED).forEach(simulator::unregister);
 
                 if (time.getStartTime() % (15 * 60 * 1000) == 0) {
                     // Print progress every 15 simulated minutes

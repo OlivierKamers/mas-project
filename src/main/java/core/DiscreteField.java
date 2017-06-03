@@ -160,7 +160,8 @@ public class DiscreteField {
                 .collect(Collectors.toList());
 
         for (PositionBroadcast pb : positionBroadcasts) {
-            vector = updateVectorWithPB(taxiPosition, vector, pb);
+            Vector2D diff = new Vector2D(pb.getPosition().x - taxiPosition.x, pb.getPosition().y - taxiPosition.y);
+            vector = vector.add(-1.0 * CAPACITY_WEIGHT * pb.getFreeCapacity() * (1 - Math.min(1, Point.distance(taxiPosition, pb.getPosition()) / taxiInfluenceRange)), diff);
         }
 
         for (int offset = 0; offset < matrixStep; offset++) {
@@ -175,7 +176,8 @@ public class DiscreteField {
                 if (fieldValue > 10e-3) {
                     nonZero = true;
                     Point fieldPoint = convertFieldToMapCoordinates(p[0], p[1]);
-                    vector = updateVectorWithField(taxiPosition, vector, fieldPoint, fieldValue);
+                    Vector2D diff = new Vector2D(fieldPoint.x - taxiPosition.x, fieldPoint.y - taxiPosition.y);
+                    vector = vector.add(fieldValue / Point.distance(taxiPosition, fieldPoint), diff);
                 }
             }
 
