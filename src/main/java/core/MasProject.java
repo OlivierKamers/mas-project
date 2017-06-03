@@ -51,7 +51,7 @@ public final class MasProject {
     private static final int SPEED_UP = 5;
     private static final double DEFAULT_SAMPLE = 0.02;
 
-    private static Random r = new Random();
+    private static Random r = new Random(2810199416101995L);
 
     private MasProject() {
     }
