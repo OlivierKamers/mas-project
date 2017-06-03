@@ -17,6 +17,8 @@ package core;/*
 import com.github.rinde.rinsim.core.Simulator;
 import com.github.rinde.rinsim.core.model.comm.CommModel;
 import com.github.rinde.rinsim.core.model.pdp.DefaultPDPModel;
+import com.github.rinde.rinsim.core.model.pdp.PDPModel;
+import com.github.rinde.rinsim.core.model.pdp.Parcel;
 import com.github.rinde.rinsim.core.model.road.RoadModel;
 import com.github.rinde.rinsim.core.model.road.RoadModelBuilders;
 import com.github.rinde.rinsim.core.model.time.TickListener;
@@ -34,10 +36,7 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.Nullable;
 import javax.measure.unit.SI;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -130,6 +129,8 @@ public final class MasProject {
         final RandomGenerator rng = simulator.getRandomGenerator();
 
         final RoadModel roadModel = simulator.getModelProvider().getModel(RoadModel.class);
+        final DefaultPDPModel pdpModel = simulator.getModelProvider().getModel(DefaultPDPModel.class);
+        final CommModel commModel = simulator.getModelProvider().getModel(CommModel.class);
 
         // Register random Taxis
         for (int i = 0; i < NUM_TAXIS * sample; i++) {
@@ -145,6 +146,13 @@ public final class MasProject {
         simulator.addTickListener(new TickListener() {
             @Override
             public void tick(@NotNull TimeLapse time) {
+                Collection<Parcel> parcels = new ArrayList<>(pdpModel.getParcels(PDPModel.ParcelState.DELIVERED));
+                parcels.forEach(c -> {
+                    commModel.unregister((Customer) c);
+                    pdpModel.unregister(c);
+                    roadModel.unregister(c);
+                });
+
                 if (time.getStartTime() % (15 * 60 * 1000) == 0) {
                     // Print progress every 15 simulated minutes
                     System.out.println(LocalTime.now().toString() + " ==> " + Helper.START_TIME.plusNanos(time.getStartTime() * 1000000));
