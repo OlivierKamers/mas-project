@@ -156,6 +156,7 @@ public final class MasProject {
                 if (time.getStartTime() % (15 * 60 * 1000) == 0) {
                     // Print progress every 15 simulated minutes
                     System.out.println(LocalTime.now().toString() + " ==> " + Helper.START_TIME.plusNanos(time.getStartTime() * 1000000));
+                    System.out.println("commsize: " + commModel.getUsersAndDevices().size());
                 }
                 amountOfIdleTaxis.add((int) roadModel.getObjectsOfType(Taxi.class).stream().filter(t -> t.getState() == Taxi.TaxiState.IDLE).count());
                 amountOfWaitingCustomers.add(roadModel.getObjectsOfType(Customer.class).size());
