@@ -10,7 +10,7 @@ public class Helper {
     public static final int ROADMODEL_BOUNDARIES_SCALE = 20;
     public static final Point ROADMODEL_MIN_POINT = new Point(-74.0193099976, -40.8774528503);
     public static final Point ROADMODEL_MAX_POINT = new Point(-73.9104537964, -40.7011375427);
-    public static final LocalDateTime START_TIME = LocalDateTime.of(2016, 1, 13, 0, 0, 0);
+    public static final LocalDateTime START_TIME = LocalDateTime.of(2016, 1, 12, 0, 0, 0);
     public static final LocalDateTime STOP_TIME = LocalDateTime.of(2016, 1, 14, 0, 0, 0);
     public static final Period FIELD_TIME_OFFSET = Period.ofWeeks(52);
 
