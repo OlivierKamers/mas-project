@@ -110,11 +110,34 @@ def make_double_plot(timestamp, j, title, k1, k2, xlabel='Time'):
   plt.close('all')
 
 
+def combined_boxplots(jsons, title, k):
+  data = map(lambda x: x[k], jsons)
+  xlabels = map(lambda x: " ".join(x['args']), jsons)
+  print xlabels
+  plt.boxplot(data)
+  plt.title(title)
+  plt.xticks(range(1, len(xlabels) + 1), xlabels, rotation=45, ha='right')
+  plt.tight_layout()
+  plt.savefig(os.path.join(figs_path, '{}_combined_boxplots.png'.format(k)), dpi=300)
+  plt.close('all')
+
 def main():
   for f in os.listdir(stats_path):
     if fnmatch.fnmatch(f, 'stats_*.json'):
       analyze_experiment(f)
 
 
+def create_combined_boxplots():
+  jsons = []
+  for f in os.listdir(stats_path):
+    if fnmatch.fnmatch(f, 'stats_*.json'):  # TODO: hier nog verder filteren want we moeten niet alle experimenten hebben
+      with open(os.path.join(stats_path, f), 'r') as fl:
+        j = json.load(fl)
+        jsons.append(j)
+  combined_boxplots(jsons, 'Pickup waiting times', 'pickupWaitingTimes')
+  combined_boxplots(jsons, 'Travel time overhead', 'travelTimeOverhead')
+
+
 if __name__ == "__main__":
-  main()
+  # main()
+  create_combined_boxplots()
