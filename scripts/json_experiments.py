@@ -8,6 +8,8 @@ import matplotlib.dates as mdates
 import numpy as np
 from matplotlib import pyplot as plt
 
+# stats_path = os.path.join('..', 'final')
+# figs_path = os.path.join('..', 'final')
 stats_path = os.path.join('..', 'stats')
 figs_path = os.path.join('..', 'figures')
 START_TIME = dt.datetime(2016, 1, 13, 0, 0, 0)
@@ -40,29 +42,31 @@ def make_histogram(timestamp, j, title, k, xlabel):
   plt.grid(True)
 
   # plt.show()
-  plt.savefig(os.path.join(figs_path, '{}_{}_{}_{}.png'.format(timestamp, j['args'], k, 'hist')), dpi=300)
+  plt.savefig(os.path.join(figs_path, '{}_{}_{}.png'.format(k, j['args'], 'hist')), dpi=300)
   plt.close('all')
 
 
 def make_boxplot(timestamp, j, title, k, xlabel):
   if len(j[k]) == 0: return
   plt.boxplot(j[k])
-  plt.xlabel(xlabel)
-  plt.ylabel('times')
+  plt.xlabel(" ".join(j['args']))
+  plt.ylabel('Times [min]')
+  axes = plt.gca()
+  axes.set_ylim([0, 50])
   plt.title(title)
 
   # plt.show()
-  plt.savefig(os.path.join(figs_path, '{}_{}_{}_{}.png'.format(timestamp, j['args'], k, 'boxplt')), dpi=300)
+  plt.savefig(os.path.join(figs_path, '{}_{}_{}.png'.format(k, j['args'], 'boxplt')), dpi=300)
   plt.close('all')
 
 
 def make_plots(timestamp, j):
   make_double_plot(timestamp, j, 'Amount of idle taxis and waiting customers', 'amountOfIdleTaxis', 'amountOfWaitingCustomers')
-  make_histogram(timestamp, j, 'Customer waiting time before pickup', 'pickupWaitingTimes', 'Waiting time (min)')
+  # make_histogram(timestamp, j, 'Customer waiting time before pickup', 'pickupWaitingTimes', 'Waiting time (min)')
   make_histogram(timestamp, j, 'Route length reduction by trading', 'tradeProfits', 'Trade profit (km)')
   make_histogram(timestamp, j, 'Number of requests before pickup', 'numberOfRequests', 'Count')
   make_histogram(timestamp, j, 'Ratio of actual distance to shortest distance', 'travelTimeOverhead', 'Ratio')
-  make_boxplot(timestamp, j, 'pickupWaitingTimes', 'pickupWaitingTimes', 'pickupWaitingTimesXLABEL')
+  make_boxplot(timestamp, j, 'Pickup Waiting Times', 'pickupWaitingTimes', j['args'])
 
 
 def average(arr, n):
@@ -112,7 +116,8 @@ def make_double_plot(timestamp, j, title, k1, k2, xlabel='Time'):
 
 def combined_boxplots(jsons, title, k):
   data = map(lambda x: x[k], jsons)
-  xlabels = map(lambda x: " ".join(x['args']), jsons)
+  # xlabels = map(lambda x: " ".join(x['args']), jsons)
+  xlabels = ['No improvements', 'Field', 'Field + trading']
   print xlabels
   plt.boxplot(data)
   plt.title(title)
@@ -120,6 +125,7 @@ def combined_boxplots(jsons, title, k):
   plt.tight_layout()
   plt.savefig(os.path.join(figs_path, '{}_combined_boxplots.png'.format(k)), dpi=300)
   plt.close('all')
+
 
 def main():
   for f in os.listdir(stats_path):
@@ -130,14 +136,15 @@ def main():
 def create_combined_boxplots():
   jsons = []
   for f in os.listdir(stats_path):
-    if fnmatch.fnmatch(f, 'stats_*.json'):  # TODO: hier nog verder filteren want we moeten niet alle experimenten hebben
+    if fnmatch.fnmatch(f, 'stats_*.json'):
       with open(os.path.join(stats_path, f), 'r') as fl:
         j = json.load(fl)
+        cleanup(j)
         jsons.append(j)
   combined_boxplots(jsons, 'Pickup waiting times', 'pickupWaitingTimes')
   combined_boxplots(jsons, 'Travel time overhead', 'travelTimeOverhead')
 
 
 if __name__ == "__main__":
-  # main()
+  main()
   create_combined_boxplots()
