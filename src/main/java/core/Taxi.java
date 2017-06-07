@@ -101,15 +101,15 @@ public class Taxi extends Vehicle implements CommUser {
         return tradeProfits;
     }
 
-    public ArrayList<MoveProgress> getIdleMoveProgress() {
+    ArrayList<MoveProgress> getIdleMoveProgress() {
         return idleMoveProgress;
     }
 
-    public int getId() {
+    private int getId() {
         return id;
     }
 
-    public TaxiState getState() {
+    TaxiState getState() {
         return state;
     }
 
@@ -273,7 +273,7 @@ public class Taxi extends Vehicle implements CommUser {
      */
     private void acceptDeal(ContractDeal deal) {
         Customer customer = deal.getCustomer();
-        ContractAccept accept = new ContractAccept(this);
+        ContractAccept accept = new ContractAccept();
         commDevice.get().send(accept, customer);
         currentCustomers.add(customer);
         sortRoute();
@@ -388,7 +388,6 @@ public class Taxi extends Vehicle implements CommUser {
                 .ifPresent(ta -> {
                     currentCustomers.add(ta.getCustomer());
                     dealCapacity = 0;
-//                    System.out.println(toString() + " handled accept for customer " + ta.getCustomer());
                     sortRoute();
                     setState(TaxiState.BUSY);
                 });
@@ -407,7 +406,6 @@ public class Taxi extends Vehicle implements CommUser {
                 .ifPresent(tradeDeal -> {
                     if (currentCustomers.contains(tradeDeal.getCustomer()) && !pickedUpCustomers.contains(tradeDeal.getCustomer())) {
                         TradeAccept tradeAccept = new TradeAccept(tradeDeal.getCustomer());
-//                        System.out.println("Sending trade accept " + tradeAccept.toString() + " for deal " + tradeDeal.toString());
                         commDevice.get().send(tradeAccept, tradeDeal.getTaxi());
                         tradeProfits.add(tradeDeal.getProfit());
                         currentCustomers.remove(tradeDeal.getCustomer());
@@ -444,7 +442,6 @@ public class Taxi extends Vehicle implements CommUser {
 
         if (bestRequest != null) {
             TradeDeal tradeDeal = new TradeDeal(bestProfit, this, bestRequest.getCustomer());
-//            System.out.println(toString() + " Sending trade deal " + tradeDeal + " to " + bestRequest.getTaxi());
             commDevice.get().send(tradeDeal, bestRequest.getTaxi());
             ticksSinceTradeDeal = 0;
             dealCapacity = bestRequest.getCustomer().getNeededCapacity();
@@ -493,7 +490,6 @@ public class Taxi extends Vehicle implements CommUser {
             double finalBestReduction = bestReduction;
             possibleTaxis.forEach(taxi -> {
                 TradeRequest tradeRequest = new TradeRequest(this, finalBestCustomer, finalBestReduction);
-//                System.out.println(toString() + " Sending trade request " + tradeRequest);
                 commDevice.get().send(tradeRequest, taxi);
             });
         }

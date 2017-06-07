@@ -29,7 +29,6 @@ import com.github.rinde.rinsim.core.model.road.RoadModel;
 import com.github.rinde.rinsim.core.model.time.Clock;
 import com.github.rinde.rinsim.core.model.time.Clock.ClockEventType;
 import com.github.rinde.rinsim.event.Event;
-import com.github.rinde.rinsim.event.EventAPI;
 import com.github.rinde.rinsim.event.EventDispatcher;
 import com.github.rinde.rinsim.event.Listener;
 import com.github.rinde.rinsim.geom.Point;
@@ -83,10 +82,6 @@ public final class StatsTracker extends AbstractModelVoid {
      */
     public static Builder builder() {
         return new AutoValue_StatsTracker_Builder();
-    }
-
-    EventAPI getEventAPI() {
-        return eventDispatcher.getPublicEventAPI();
     }
 
     /**

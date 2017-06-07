@@ -39,6 +39,7 @@ public class TaxiRenderer extends AbstractCanvasRenderer {
     final RoadModel roadModel;
     final PDPModel pdpModel;
     final Language lang;
+
     TaxiRenderer(RoadModel r, PDPModel p, Language l) {
         lang = l;
         roadModel = r;

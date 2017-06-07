@@ -1,4 +1,5 @@
-package core;/*
+package core;
+/*
  * Copyright (C) 2011-2016 Rinde van Lon, iMinds-DistriNet, KU Leuven
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -115,7 +116,7 @@ public final class MasProject {
     /**
      * Starts the project.
      */
-    public static void run(String[] args, boolean showGUI, boolean useField, boolean useTrading, double sample, int matrixStep, int minPerFrame, double taxiInfluenceRange, int fieldRange, double idleTravelLimit) {
+    private static void run(String[] args, boolean showGUI, boolean useField, boolean useTrading, double sample, int matrixStep, int minPerFrame, double taxiInfluenceRange, int fieldRange, double idleTravelLimit) {
         DiscreteField discreteField = null;
         if (useField) {
             FieldGenerator fieldGenerator = new FieldGenerator(matrixStep, minPerFrame);
@@ -142,7 +143,6 @@ public final class MasProject {
 
         final RoadModel roadModel = simulator.getModelProvider().getModel(RoadModel.class);
         final DefaultPDPModel pdpModel = simulator.getModelProvider().getModel(DefaultPDPModel.class);
-        final CommModel commModel = simulator.getModelProvider().getModel(CommModel.class);
 
         // Register random Taxis
         for (int i = 0; i < NUM_TAXIS * sample; i++) {
@@ -163,7 +163,6 @@ public final class MasProject {
                 if (time.getStartTime() % (15 * 60 * 1000) == 0) {
                     // Print progress every 15 simulated minutes
                     System.out.println(LocalTime.now().toString() + " ==> " + Helper.START_TIME.plusNanos(time.getStartTime() * 1000000));
-                    System.out.println("commsize: " + commModel.getUsersAndDevices().size());
                 }
                 amountOfIdleTaxis.add((int) roadModel.getObjectsOfType(Taxi.class).stream().filter(t -> t.getState() == Taxi.TaxiState.IDLE).count());
                 amountOfWaitingCustomers.add(roadModel.getObjectsOfType(Customer.class).size());
@@ -218,7 +217,7 @@ public final class MasProject {
         stats.save();
     }
 
-    static View.Builder createGui(DiscreteField df) {
+    private static View.Builder createGui(DiscreteField df) {
         View.Builder builder = View.builder();
 
         if (df != null) {
@@ -231,13 +230,11 @@ public final class MasProject {
                 .withSpeedUp(SPEED_UP)
                 .with(PlaneRoadModelRenderer.builder())
                 .with(StatsPanel.builder())
-//                .with(CommRenderer.builder().withReliabilityColors())
                 .with(RoadUserRenderer.builder()
-                                .withImageAssociation(
-                                        Taxi.class, "/graphics/flat/taxi-32.png")
-                                .withImageAssociation(
-                                        Customer.class, "/graphics/flat/hailing-cab-32.png")
-//                        .withToStringLabel()
+                        .withImageAssociation(
+                                Taxi.class, "/graphics/flat/taxi-32.png")
+                        .withImageAssociation(
+                                Customer.class, "/graphics/flat/hailing-cab-32.png")
                 )
                 .with(TaxiRenderer.builder(TaxiRenderer.Language.ENGLISH))
                 .withTitleAppendix("MAS Project 2017 - Evert Etienne & Olivier Kamers")

@@ -8,11 +8,23 @@ import java.util.List;
 
 
 /**
- * core.MySQLDataLoader class responsible for loading the historical data from a MySQL data source.
+ * MySQLDataLoader class responsible for loading the historical data from a MySQL data source.
+ * Table structure:
+ * CREATE TABLE `pickups` (
+ * `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+ * `tpep_pickup_datetime` datetime DEFAULT NULL,
+ * `passenger_count` int(2) DEFAULT NULL,
+ * `pickup_longitude` decimal(8,6) DEFAULT NULL,
+ * `pickup_latitude` decimal(8,6) DEFAULT NULL,
+ * `dropoff_longitude` decimal(8,6) DEFAULT NULL,
+ * `dropoff_latitude` decimal(8,6) DEFAULT NULL,
+ * PRIMARY KEY (`id`),
+ * KEY `idx_tpep_pickup_datetime` (`tpep_pickup_datetime`)
+ * ) ENGINE=InnoDB AUTO_INCREMENT=20617002 DEFAULT CHARSET=utf8;
  */
 public class MySQLDataLoader {
-    static String CONNECTION_STRING = "jdbc:mysql://%s:%s/%s?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=CET";
-    Connection connection;
+    private static String CONNECTION_STRING = "jdbc:mysql://%s:%s/%s?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=CET";
+    private Connection connection;
 
     MySQLDataLoader() {
         try {
@@ -32,26 +44,6 @@ public class MySQLDataLoader {
     }
 
     /**
-     * Read N first data from the database table.
-     */
-    List<HistoricalData> readN(int N) {
-        PreparedStatement statement = null;
-        try {
-            statement = connection.prepareStatement("SELECT * FROM pickups LIMIT ?;");
-            statement.setInt(1, N);
-            ResultSet rst = statement.executeQuery();
-            ArrayList<HistoricalData> result = new ArrayList<>();
-            while (rst.next()) {
-                result.add(parse(rst));
-            }
-            return result;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return Collections.emptyList();
-        }
-    }
-
-    /**
      * Read data with tpep_pickup_datetime between two dates.
      */
     List<HistoricalData> read(LocalDateTime start, LocalDateTime end) {
@@ -64,7 +56,6 @@ public class MySQLDataLoader {
             while (rst.next()) {
                 result.add(parse(rst));
             }
-//            System.out.println(statement.toString() + " ==> " + result.size() + " pickups.");
             rst.close();
             statement.close();
             return result;

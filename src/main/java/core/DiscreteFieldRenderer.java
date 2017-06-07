@@ -12,10 +12,10 @@ import org.jetbrains.annotations.NotNull;
 
 class DiscreteFieldRenderer extends AbstractCanvasRenderer {
 
-    static final RGB COLOR_LOW = new RGB(0, 255, 255);
-    static final RGB COLOR_HIGH = new RGB(255, 0, 0);
+    private static final RGB COLOR_LOW = new RGB(0, 255, 255);
+    private static final RGB COLOR_HIGH = new RGB(255, 0, 0);
 
-    DiscreteField discreteField;
+    private DiscreteField discreteField;
 
     DiscreteFieldRenderer(DiscreteField df) {
         this.discreteField = df;
@@ -70,7 +70,7 @@ class DiscreteFieldRenderer extends AbstractCanvasRenderer {
             return new DiscreteFieldRenderer(df());
         }
 
-        public Builder withField(DiscreteField df) {
+        Builder withField(DiscreteField df) {
             return create(df);
         }
 

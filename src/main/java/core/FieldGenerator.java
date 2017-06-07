@@ -4,8 +4,8 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public class FieldGenerator {
-    public static final int DEFAULT_MATRIX_STEP = 100;
+class FieldGenerator {
+    private static final int DEFAULT_MATRIX_STEP = 100;
     private static double FIELD_INFLUENCE = 0.5;
     private double[][][] field;
     private double[] maxFieldValues;
@@ -14,11 +14,7 @@ public class FieldGenerator {
     private int matrixStep;
     private int timeStep;
 
-    public int getMatrixStep() {
-        return matrixStep;
-    }
-
-    public FieldGenerator(int matrixStep, int minPerFrame) {
+    FieldGenerator(int matrixStep, int minPerFrame) {
         this.matrixStep = matrixStep == 0 ? DEFAULT_MATRIX_STEP : matrixStep;
         this.xDim = (int) (this.matrixStep * Helper.getXScale());
         this.yDim = (int) (this.matrixStep * Helper.getYScale());
@@ -27,7 +23,11 @@ public class FieldGenerator {
         this.maxFieldValues = new double[this.timeStep];
     }
 
-    public DiscreteField load(double taxiInfluenceRange) {
+    private int getMatrixStep() {
+        return matrixStep;
+    }
+
+    DiscreteField load(double taxiInfluenceRange) {
         MySQLDataLoader loader = new MySQLDataLoader();
         Duration timeDuration = Duration.between(Helper.START_TIME, Helper.STOP_TIME).dividedBy(this.timeStep);
         LocalDateTime curTime = Helper.START_TIME.minus(Helper.FIELD_TIME_OFFSET);
@@ -37,7 +37,6 @@ public class FieldGenerator {
         }
         smooth();
         findMaxValues();
-//        normalize();
         return new DiscreteField(this.field, this.maxFieldValues, timeDuration, getMatrixStep(), taxiInfluenceRange);
     }
 
@@ -78,20 +77,6 @@ public class FieldGenerator {
                 }
             }
             maxFieldValues[t] = max;
-        }
-    }
-
-    private void normalize() {
-        for (int t = 0; t < this.field.length; t++) {
-            //Normalize
-            double max = maxFieldValues[t];
-            if (max > 0) {
-                for (int x = 0; x < xDim; x++) {
-                    for (int y = 0; y < yDim; y++) {
-                        this.field[t][x][y] /= max;
-                    }
-                }
-            }
         }
     }
 }

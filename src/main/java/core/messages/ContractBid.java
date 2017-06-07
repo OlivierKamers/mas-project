@@ -1,7 +1,6 @@
 package core.messages;
 
 import com.github.rinde.rinsim.core.model.comm.MessageContents;
-import core.Customer;
 import core.Taxi;
 
 /**
