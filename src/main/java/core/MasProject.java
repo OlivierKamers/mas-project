@@ -18,7 +18,6 @@ import com.github.rinde.rinsim.core.Simulator;
 import com.github.rinde.rinsim.core.model.comm.CommModel;
 import com.github.rinde.rinsim.core.model.pdp.DefaultPDPModel;
 import com.github.rinde.rinsim.core.model.pdp.PDPModel;
-import com.github.rinde.rinsim.core.model.pdp.Parcel;
 import com.github.rinde.rinsim.core.model.road.RoadModel;
 import com.github.rinde.rinsim.core.model.road.RoadModelBuilders;
 import com.github.rinde.rinsim.core.model.time.TickListener;
@@ -36,7 +35,10 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.Nullable;
 import javax.measure.unit.SI;
 import java.time.LocalTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 /**
@@ -59,7 +61,17 @@ public final class MasProject {
     /**
      * Starts the {@link MasProject}.
      *
-     * @param args The first option may optionally indicate the end time of the simulation.
+     * @param args The  arguments for the simulation
+     *             usage: MAS-project
+     *             -f,--field              Enable field
+     *             -F,--frange <arg>       Range for field analysis
+     *             -g,--gui                Run with GUI
+     *             -i,--influence <arg>    Taxi repulsion influence range
+     *             -l,--idlelimit <arg>    Distance limit for idle driving
+     *             -m,--mtxstep <arg>      Matrix Subdivision Step
+     *             -r,--resolution <arg>   Minutes per time frame
+     *             -s,--sample <arg>       Data sampling factor
+     *             -t,--trade              Enable trading
      */
     public static void main(@Nullable String[] args) {
         System.out.println(Arrays.toString(args));
